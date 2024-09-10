@@ -1,15 +1,26 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 export default function NoteScreen() {
   const router = useRouter();
   const [note, setNote] = useState("");
 
+  const loadNote = async () => {
+    try {
+      const savedNote = await AsyncStorage.getItem("note");
+      if (savedNote !== null) {
+        setNote(JSON.parse(savedNote));
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);
+    }
+  };
+
   useEffect(() => {
-    const note = router.query.note;
-    setNote(note);
-  }, [router.query]);
+    loadNote();
+  }, []);
 
   return (
     <View style={styles.container}>

@@ -8,9 +8,9 @@ import {
   ScrollView,
   Alert,
   Pressable,
-  Link,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Link } from "expo-router";
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
@@ -64,11 +64,11 @@ export default function HomeScreen() {
       <ScrollView style={styles.notesContainer}>
         {notes.map((note, index) => (
           <View key={index} style={styles.noteContainer}>
-            <Pressable onPress={() => Alert.alert("Note", note)}>
+            <Link href={{ pathname: "/notes/[note]", params: { note } }}>
               <Text style={styles.note}>
                 {index + 1}. {note}
               </Text>
-            </Pressable>
+            </Link>
             <Pressable
               onPress={() => deleteNote(index)}
               style={styles.deleteButton}>
