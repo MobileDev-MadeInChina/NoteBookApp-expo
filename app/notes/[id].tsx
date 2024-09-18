@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useCollection } from "react-firebase-hooks/firestore";
 import {
   Alert,
   Button,
@@ -25,7 +26,8 @@ export default function NoteScreen() {
 
   const loadNote = async () => {
     try {
-      const note = params.note.toString();
+      const note = getDoc(doc(params.id));
+
       setNote(note);
     } catch (error) {
       Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);

@@ -9,49 +9,46 @@ import {
   Alert,
   Pressable,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link } from "expo-router";
+import { database } from "../firebase";
+import { useCollection } from "react-firebase-hooks/firestore";
+import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
+
+type Note = { id: string; text: string };
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
-  const [notes, setNotes] = useState<string[]>([]);
-
-  useEffect(() => {
-    loadNotes();
-  }, []);
+  const [values, loading, error] = useCollection(collection(database, "notes"));
+  if (values === undefined) {
+    console.log("Could not load notes");
+    return;
+  }
+  const data: Note[] = values.docs.map((doc) => ({
+    id: doc.id,
+    text: doc.data().text,
+  }));
 
   const addNote = async () => {
-    const updatedNotes = [...notes, text];
-    setNotes(updatedNotes);
-    setText("");
-    await saveNotes(updatedNotes);
-  };
-
-  const loadNotes = async () => {
     try {
-      const savedNotes = await AsyncStorage.getItem("notes");
-
-      if (savedNotes !== null) {
-        setNotes(JSON.parse(savedNotes));
-        console.log("Loaded notes", JSON.parse(savedNotes));
-      }
+      await addDoc(collection(database, "notes"), {
+        text: text,
+      });
+      setText("");
     } catch (error) {
-      Alert.alert("Error", "Failed to load notes", [{ text: "Okay" }]);
-    }
-  };
-
-  const saveNotes = async (notes: string[]) => {
-    try {
-      await AsyncStorage.setItem("notes", JSON.stringify(notes));
-    } catch (error) {
-      Alert.alert("Error", "Failed to save notes", [{ text: "Okay" }]);
+      Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
     }
   };
 
   const deleteNote = async (index: number) => {
-    const updatedNotes = notes.filter((_, i) => i !== index);
-    setNotes(updatedNotes);
-    await saveNotes(updatedNotes);
+    try {
+      if (data === undefined) {
+        console.log("No notes found");
+        return;
+      }
+      await deleteDoc(doc(collection(database, "notes"), data[index].id));
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
+    }
   };
 
   return (
@@ -64,21 +61,24 @@ export default function HomeScreen() {
       />
       <Button title="Add Note" onPress={addNote} />
       <ScrollView style={styles.notesContainer}>
-        {notes.map((note, index) => (
-          <View key={index} style={styles.noteContainer}>
-            <Link href={{ pathname: "/notes/[note]", params: { note: note } }}>
-              <Text style={styles.note}>
-                {index + 1}.
-                {note.length > 24 ? `${note.slice(0, 24)}...` : note}
-              </Text>
-            </Link>
-            <Pressable
-              onPress={() => deleteNote(index)}
-              style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </Pressable>
-          </View>
-        ))}
+        {data &&
+          data.map((note, index) => (
+            <View key={index} style={styles.noteContainer}>
+              <Link href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
+                <Text style={styles.note}>
+                  {index + 1}.
+                  {note.text.length > 24
+                    ? `${note.text.slice(0, 24)}...`
+                    : note.text}
+                </Text>
+              </Link>
+              <Pressable
+                onPress={() => deleteNote(index)}
+                style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          ))}
       </ScrollView>
     </View>
   );
