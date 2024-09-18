@@ -30,10 +30,10 @@ export default function HomeScreen() {
   const loadNotes = async () => {
     try {
       const savedNotes = await AsyncStorage.getItem("notes");
-      console.log(savedNotes);
 
       if (savedNotes !== null) {
         setNotes(JSON.parse(savedNotes));
+        console.log("Loaded notes", JSON.parse(savedNotes));
       }
     } catch (error) {
       Alert.alert("Error", "Failed to load notes", [{ text: "Okay" }]);
@@ -68,7 +68,8 @@ export default function HomeScreen() {
           <View key={index} style={styles.noteContainer}>
             <Link href={{ pathname: "/notes/[note]", params: { note: note } }}>
               <Text style={styles.note}>
-                {index + 1}. {note}
+                {index + 1}.
+                {note.length > 24 ? `${note.slice(0, 24)}...` : note}
               </Text>
             </Link>
             <Pressable
