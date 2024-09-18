@@ -30,6 +30,8 @@ export default function HomeScreen() {
   const loadNotes = async () => {
     try {
       const savedNotes = await AsyncStorage.getItem("notes");
+      console.log(savedNotes);
+
       if (savedNotes !== null) {
         setNotes(JSON.parse(savedNotes));
       }
@@ -64,7 +66,7 @@ export default function HomeScreen() {
       <ScrollView style={styles.notesContainer}>
         {notes.map((note, index) => (
           <View key={index} style={styles.noteContainer}>
-            <Link href={{ pathname: "/notes/[note]", params: { note } }}>
+            <Link href={{ pathname: "/notes/[note]", params: { note: note } }}>
               <Text style={styles.note}>
                 {index + 1}. {note}
               </Text>

@@ -3,13 +3,13 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
-export default function NoteScreen() {
+export default function NoteScreen({ id }: { id: number }) {
   const router = useRouter();
   const [note, setNote] = useState("");
 
   const loadNote = async () => {
     try {
-      const savedNote = await AsyncStorage.getItem("note");
+      const savedNote = await AsyncStorage.getItem(`note-${id}`);
       if (savedNote !== null) {
         setNote(JSON.parse(savedNote));
       }
