@@ -1,5 +1,12 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useLocalSearchParams } from "expo-router";
+import { database } from "@/firebase";
+import { Redirect, useLocalSearchParams } from "expo-router";
+import {
+  updateDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useCollection } from "react-firebase-hooks/firestore";
 import {
@@ -24,41 +31,32 @@ export default function NoteScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const noteId: string = params.id as string;
+
   const loadNote = async () => {
     try {
-      const note = getDoc(doc(params.id));
+      const note = await getDoc(doc(collection(database, "notes"), noteId));
 
-      setNote(note);
+      if (note === undefined) {
+        console.log("No notes found");
+        return;
+      }
+      setNote(note.get("text"));
     } catch (error) {
       Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);
     }
   };
 
-  const saveNote = async () => {
+  const updateNote = async () => {
     setIsSaving(true);
     try {
-      // Get all notes to update
-      const allNotes = await AsyncStorage.getItem("notes");
-      if (allNotes === null) {
-        console.log("No notes found");
-        return;
-      }
-      // Parse notes to array
-      let notes = JSON.parse(allNotes);
-
-      // remove old note with splice. Mutates the existing array
-      const oldNoteIndex = notes.indexOf(note);
-      notes.splice(oldNoteIndex, 1);
-      // Add updated note to array at the old index with splice
-      notes.splice(oldNoteIndex, 0, updatedNote);
-
-      // Save updated notes
-      await AsyncStorage.setItem("notes", JSON.stringify(notes));
-
-      // Go back to home screen
-      router.push("/");
+      await updateDoc(doc(collection(database, "notes"), noteId), {
+        text: updatedNote,
+      });
+      setNote("");
+      Redirect({ href: "/" });
     } catch (error) {
-      Alert.alert("Error", "Failed to save note", [{ text: "Okay" }]);
+      Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
     }
     setIsSaving(false);
   };
@@ -85,7 +83,7 @@ export default function NoteScreen() {
           <Pressable style={styles.button} onPress={editNote}>
             <Text style={styles.buttonText}>Cancel</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={saveNote}>
+          <Pressable style={styles.button} onPress={updateNote}>
             <Text style={styles.buttonText}>Save</Text>
           </Pressable>
         </View>
