@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -18,7 +18,9 @@ type Note = { id: string; text: string };
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
+
   const [values, loading, error] = useCollection(collection(database, "notes"));
+
   if (values === undefined) {
     console.log("Could not load notes");
     return;
@@ -30,7 +32,7 @@ export default function HomeScreen() {
 
   const addNote = async () => {
     try {
-      await addDoc(collection(database, "notes"), {
+      await addDoc(collection(database, "notes"),  {
         text: text,
       });
       setText("");

@@ -3,12 +3,10 @@ import { Redirect, useLocalSearchParams } from "expo-router";
 import {
   updateDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { useCollection } from "react-firebase-hooks/firestore";
 import {
   Alert,
   Button,
