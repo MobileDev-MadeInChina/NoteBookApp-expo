@@ -8,13 +8,14 @@ import {
   ScrollView,
   Alert,
   Pressable,
+  Image,
 } from "react-native";
 import { Link } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
 
-type Note = { id: string; text: string };
+type Note = { id: string; text: string; imageUrls: string[] };
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
@@ -23,18 +24,18 @@ export default function HomeScreen() {
 
   if (values === undefined) {
     console.log("Could not load notes");
-    return;
+    return null;
   }
+
   const data: Note[] = values.docs.map((doc) => ({
     id: doc.id,
     text: doc.data().text,
+    imageUrls: doc.data().imageUrls,
   }));
 
   const addNote = async () => {
     try {
-      await addDoc(collection(database, "notes"),  {
-        text: text,
-      });
+      await addDoc(collection(database, "notes"), { text, imageUrls: [] });
       setText("");
     } catch (error) {
       Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
@@ -43,7 +44,7 @@ export default function HomeScreen() {
 
   const deleteNote = async (index: number) => {
     try {
-      if (data === undefined) {
+      if (!data) {
         console.log("No notes found");
         return;
       }
@@ -68,11 +69,22 @@ export default function HomeScreen() {
             <View key={index} style={styles.noteContainer}>
               <Link href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
                 <Text style={styles.note}>
-                  {index + 1}.
+                  {index + 1}.{" "}
                   {note.text.length > 24
                     ? `${note.text.slice(0, 24)}...`
                     : note.text}
                 </Text>
+                {note.imageUrls.length > 0 && (
+                  <View>
+                    {note.imageUrls.map((imageUrl, index) => (
+                      <Image
+                        key={index}
+                        source={{ uri: imageUrl }}
+                        style={{ width: 100, height: 100 }}
+                      />
+                    ))}
+                  </View>
+                )}
               </Link>
               <Pressable
                 onPress={() => deleteNote(index)}

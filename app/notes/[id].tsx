@@ -1,11 +1,6 @@
 import { database } from "@/firebase";
 import { Redirect, useLocalSearchParams } from "expo-router";
-import {
-  updateDoc,
-  collection,
-  doc,
-  getDoc,
-} from "firebase/firestore";
+import { updateDoc, collection, doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -15,7 +10,11 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { storage } from "@/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function NoteScreen() {
   // Get note from URL params
@@ -24,10 +23,34 @@ export default function NoteScreen() {
   const [note, setNote] = useState("");
   // State for editing and saving notes
   const [updatedNote, setUpdatedNote] = useState("");
-
   // State for editing and saving
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // State for array of images
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
+
+  async function launchImagePicker() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setImagePaths((paths) => [...paths, result.assets[0].uri]);
+    }
+  }
+
+  async function uploadImage(imagePath: string) {
+    const res = await fetch(imagePath);
+    const blob = await res.blob();
+    const storageRef = ref(storage, `images/${Date.now()}.jpg`);
+    await uploadBytes(storageRef, blob).then((snapshot) => {
+      console.log(snapshot);
+    });
+
+    return getDownloadURL(storageRef);
+  }
 
   const noteId: string = params.id as string;
 
@@ -48,8 +71,16 @@ export default function NoteScreen() {
   const updateNote = async () => {
     setIsSaving(true);
     try {
+      let imageUrls: string[] = [];
+      if (imagePaths && imagePaths.length > 0) {
+        imageUrls = await Promise.all(
+          imagePaths.map((imagePath) => uploadImage(imagePath))
+        );
+      }
+
       await updateDoc(doc(collection(database, "notes"), noteId), {
         text: updatedNote,
+        imageUrls,
       });
       setNote("");
       Redirect({ href: "/" });
@@ -88,7 +119,41 @@ export default function NoteScreen() {
       ) : (
         <View>
           <Text>{note}</Text>
-          <Button title="Edit" onPress={editNote} />
+          <Button title="Edit text" onPress={editNote} />
+
+          {imagePaths.length === 0 ? (
+            <Button title="Select Image" onPress={launchImagePicker} />
+          ) : (
+            <View>
+              <Button
+                title="Select one more image"
+                onPress={launchImagePicker}
+              />
+              <Button title="Save images" onPress={updateNote} />
+            </View>
+          )}
+
+          {imagePaths && (
+            <View>
+              {imagePaths.map((imagePath, index) => (
+                <View key={index}>
+                  <Image
+                    key={index}
+                    source={{ uri: imagePath }}
+                    style={{ width: 100, height: 100 }}
+                  />
+                  <Button
+                    title="Remove"
+                    onPress={() => {
+                      setImagePaths((paths) =>
+                        paths.filter((_, i) => i !== index)
+                      );
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
     </View>
