@@ -36,6 +36,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="notes/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen name="map" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );

@@ -15,6 +15,7 @@ import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
 
+
 type Note = { id: string; text: string; imageUrls: string[] };
 
 export default function HomeScreen() {
@@ -63,6 +64,9 @@ export default function HomeScreen() {
         onChangeText={setText}
       />
       <Button title="Add Note" onPress={addNote} />
+      <Link href={{ pathname: "/map" }}>
+        map
+      </Link>
       <ScrollView style={styles.notesContainer}>
         {data &&
           data.map((note, index) => (
