@@ -49,6 +49,7 @@ export default function HomeScreen() {
         console.log("No notes found");
         return;
       }
+      
       await deleteDoc(doc(collection(database, "notes"), data[index].id));
     } catch (error) {
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);

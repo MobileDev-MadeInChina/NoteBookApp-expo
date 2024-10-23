@@ -14,7 +14,13 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { storage } from "@/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  getStorage,
+} from "firebase/storage";
 
 export default function NoteScreen() {
   // Get note from URL params
@@ -28,6 +34,8 @@ export default function NoteScreen() {
   const [isSaving, setIsSaving] = useState(false);
   // State for array of images
   const [imagePaths, setImagePaths] = useState<string[]>([]);
+  // State for deleted image urls
+  const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
 
   async function launchImagePicker() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -63,6 +71,8 @@ export default function NoteScreen() {
         return;
       }
       setNote(note.get("text"));
+      setUpdatedNote(note.get("text"));
+      setImagePaths(note.get("imageUrls"));
     } catch (error) {
       Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);
     }
@@ -72,22 +82,49 @@ export default function NoteScreen() {
     setIsSaving(true);
     try {
       let imageUrls: string[] = [];
+      // Iterate through the imagePaths array and upload or add the image URLs to the note
       if (imagePaths && imagePaths.length > 0) {
-        imageUrls = await Promise.all(
-          imagePaths.map((imagePath) => uploadImage(imagePath))
-        );
+        for (let i = 0; i < imagePaths.length; i++) {
+          const imagePath = imagePaths[i];
+          if (!imagePath.includes("http")) {
+            // if not a URL, upload it to Firebase Storage and get the URL
+            const imageUrl = await uploadImage(imagePath);
+            imageUrls.push(imageUrl);
+          } else {
+            // if it's a URL, just add it to the array
+            imageUrls.push(imagePath);
+          }
+        }
       }
 
+      // update the note in Firebase
       await updateDoc(doc(collection(database, "notes"), noteId), {
         text: updatedNote,
         imageUrls,
       });
-      setNote("");
+
+      // delete images from storage
+      for (let i = 0; i < deletedImageUrls.length; i++) {
+        const imageUrl = deletedImageUrls[i];
+        await deleteImage(imageUrl);
+      }
+
       Redirect({ href: "/" });
     } catch (error) {
       Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
     }
     setIsSaving(false);
+  };
+
+  const deleteImage = async (imageUrl: string) => {
+    try {
+      const response = await deleteObject(ref(getStorage(), imageUrl));
+      console.log(response);
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete image in storage", [
+        { text: "Okay" },
+      ]);
+    }
   };
 
   const editNote = async () => {
@@ -121,17 +158,10 @@ export default function NoteScreen() {
           <Text>{note}</Text>
           <Button title="Edit text" onPress={editNote} />
 
-          {imagePaths.length === 0 ? (
-            <Button title="Select Image" onPress={launchImagePicker} />
-          ) : (
-            <View>
-              <Button
-                title="Select one more image"
-                onPress={launchImagePicker}
-              />
-              <Button title="Save images" onPress={updateNote} />
-            </View>
-          )}
+          <View>
+            <Button title="Select image" onPress={launchImagePicker} />
+            <Button title="Save" onPress={updateNote} />
+          </View>
 
           {imagePaths && (
             <View>
@@ -145,9 +175,19 @@ export default function NoteScreen() {
                   <Button
                     title="Remove"
                     onPress={() => {
-                      setImagePaths((paths) =>
-                        paths.filter((_, i) => i !== index)
-                      );
+                      if (imagePath.includes("http")) {
+                        // if it's a URL, add it to the deletedImageUrls array
+                        setDeletedImageUrls((urls) => [...urls, imagePath]);
+                        // remove it from the imagePaths array
+                        setImagePaths((paths) =>
+                          paths.filter((_, i) => i !== index)
+                        );
+                      } else {
+                        // if it's a local path, remove it from the imagePaths array
+                        setImagePaths((paths) =>
+                          paths.filter((_, i) => i !== index)
+                        );
+                      }
                     }}
                   />
                 </View>
