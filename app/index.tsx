@@ -14,14 +14,7 @@ import { Link } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
-import { Marker } from "./map";
-
-export type Note = {
-  id: string;
-  text: string;
-  imageUrls: string[];
-  mark: Marker | null;
-};
+import { Note } from "@/types";
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
@@ -64,6 +57,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* conditionally render loading or error message */}
+      
       <TextInput
         style={styles.input}
         placeholder="Enter a note"
