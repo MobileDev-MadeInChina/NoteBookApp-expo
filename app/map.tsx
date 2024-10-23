@@ -1,47 +1,38 @@
-import MapView, { Marker } from "react-native-maps";
+import MapView, { LatLng, Marker } from "react-native-maps";
 import { useState } from "react";
-import { View } from "react-native-reanimated/lib/typescript/Animated";
+
+export type Marker = { coordinate: LatLng; key: string; title: string };
 
 export default function MapScreen() {
-  const [markers, setMarkers] = useState([])
+  const [markers, setMarkers] = useState<Marker[]>([]);
   const [region, setRegion] = useState({
-    latitude: 55.6704,  
-    longitude: 12.5785, 
-    latitudeDelta: 0.005,  
-    longitudeDelta: 0.005,  
+    latitude: 55.6704,
+    longitude: 12.5785,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
   });
 
-  function addMarker(data) {
-    const {latitude, longitude} = data.nativeEvent.coordinate
-    const newMarker = { 
-      coordinate: {latitude, longitude}, 
-      key: data.timeStamp,
-      title: "Great Place"
-    }
+  function addMarker(data: any) {
+    const { latitude, longitude } = data.nativeEvent.coordinate;
+    const newMarker = {
+      coordinate: { latitude, longitude },
+      key: data.timeStamp.toString(),
+      title: data.timeStamp.toString(),
+    };
 
-    setMarkers([...markers, newMarker])
-
+    setMarkers([...markers, newMarker]);
   }
 
   return (
-    <View>
-    <MapView
-      style={{ flex: 1 }}
-      region={region}
-      onLongPress={addMarker}
-    >
-
-    {markers.map (marker => (
-      <Marker
-        key={marker.key}
-        coordinate={marker.coordinate}
-        title={marker.title}
-      />
-    ))}
-
+    <MapView style={{ flex: 1 }} region={region} onLongPress={addMarker}>
+      {markers.map((marker) => (
+        <Marker
+          key={marker.key}
+          coordinate={marker.coordinate}
+          title={marker.title}
+          onPress={() => console.log("Marker pressed")}
+        />
+      ))}
     </MapView>
-    </View>
-
   );
 }
-

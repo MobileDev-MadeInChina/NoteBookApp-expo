@@ -14,9 +14,14 @@ import { Link } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
+import { Marker } from "./map";
 
-
-type Note = { id: string; text: string; imageUrls: string[] };
+export type Note = {
+  id: string;
+  text: string;
+  imageUrls: string[];
+  mark: Marker | null;
+};
 
 export default function HomeScreen() {
   const [text, setText] = useState("");
@@ -32,6 +37,7 @@ export default function HomeScreen() {
     id: doc.id,
     text: doc.data().text,
     imageUrls: doc.data().imageUrls,
+    mark: doc.data().mark,
   }));
 
   const addNote = async () => {
@@ -49,7 +55,7 @@ export default function HomeScreen() {
         console.log("No notes found");
         return;
       }
-      
+
       await deleteDoc(doc(collection(database, "notes"), data[index].id));
     } catch (error) {
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
@@ -65,9 +71,7 @@ export default function HomeScreen() {
         onChangeText={setText}
       />
       <Button title="Add Note" onPress={addNote} />
-      <Link href={{ pathname: "/map" }}>
-        map
-      </Link>
+      <Link href={{ pathname: "/map" }}>map</Link>
       <ScrollView style={styles.notesContainer}>
         {data &&
           data.map((note, index) => (
