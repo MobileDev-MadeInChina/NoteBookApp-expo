@@ -1,5 +1,3 @@
-// Path: dev/kea/mobileDev/NoteBookApp/components/MarkerModal.tsx
-
 import {
   Alert,
   Button,
@@ -23,7 +21,7 @@ import {
 } from "firebase/storage";
 import { Note, NoteMarker } from "@/types";
 
-// Modal to display the marker details or get user input
+// Modal to display the marker details and get user input
 export function MarkerModal({
   marker,
   setMarker,
@@ -51,6 +49,7 @@ export function MarkerModal({
       try {
         // get note from Firebase on mark key
         const tnote = await getDoc(doc(database, "notes", marker.key));
+        // if note exists, set it to the note state
         if (tnote.exists()) {
           const fetchedNote: Note = {
             id: tnote.id,
@@ -69,7 +68,7 @@ export function MarkerModal({
       fetchNote();
     }
   }, [marker]);
-
+  // launch image picker
   async function launchImagePicker() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -84,7 +83,7 @@ export function MarkerModal({
       }));
     }
   }
-
+  // upload image to Firebase Storage
   async function uploadImage(imagePath: string) {
     const res = await fetch(imagePath);
     const blob = await res.blob();
@@ -92,12 +91,13 @@ export function MarkerModal({
     await uploadBytes(storageReference, blob);
     return getDownloadURL(storageReference);
   }
-
+  // update note in Firebase
   const updateNote = async () => {
     setIsSaving(true);
     try {
+      // initialize imageUrls array
       let imageUrls: string[] = [];
-      // Iterate through the imagePaths array and upload or add the image URLs to the note
+      // Iterate through the imagePaths array and upload or add the image URLs to the imageUrls array
       if (note && note.imageUrls.length > 0) {
         for (let i = 0; i < note.imageUrls.length; i++) {
           const imagePath = note.imageUrls[i];
@@ -119,7 +119,7 @@ export function MarkerModal({
         mark: note.mark,
       });
 
-      // delete images from storage
+      // delete removed images from storage
       for (let i = 0; i < deletedImageUrls.length; i++) {
         const imageUrl = deletedImageUrls[i];
         await deleteImage(imageUrl);
@@ -131,10 +131,11 @@ export function MarkerModal({
       Alert.alert("Error", "Failed to save note", [{ text: "OK" }]);
       console.error("Error updating note:", error);
     }
+    // reset the marker and isSaving states
     setMarker(null);
     setIsSaving(false);
   };
-
+  // add note to Firebase
   const addNote = async () => {
     try {
       await addDoc(collection(database, "notes"), {
@@ -150,7 +151,7 @@ export function MarkerModal({
     }
     setMarker(null);
   };
-
+  // delete image from storage
   const deleteImage = async (imageUrl: string) => {
     try {
       const imageRef = storageRef(storage, imageUrl);
@@ -215,13 +216,17 @@ export function MarkerModal({
             }}>
             <Text style={styles.buttonText}>Cancel</Text>
           </Pressable>
-          <Pressable
-            style={styles.button}
-            onPress={() => (note.id !== "" ? updateNote() : addNote())}>
-            <Text style={styles.buttonText}>
-              {note.id !== "" ? "Update" : "Save"}
-            </Text>
-          </Pressable>
+          {isSaving ? (
+            <p>Saving...</p>
+          ) : (
+            <Pressable
+              style={styles.button}
+              onPress={() => (note.id !== "" ? updateNote() : addNote())}>
+              <Text style={styles.buttonText}>
+                {note.id !== "" ? "Update" : "Save"}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>

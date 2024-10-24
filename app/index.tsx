@@ -3,29 +3,30 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
-  Button,
   ScrollView,
   Alert,
   Pressable,
   Image,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, doc, addDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, deleteDoc } from "firebase/firestore";
 import { Note } from "@/types";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
-  const [text, setText] = useState("");
-
+  // useCollection hook to fetch notes from Firebase
   const [values, loading, error] = useCollection(collection(database, "notes"));
+  // state for deleting note
+  const [deletingNote, setDeletingNote] = useState(false);
+  const router = useRouter();
 
   if (values === undefined) {
-    console.log("Could not load notes");
     return null;
   }
 
+  // map Firebase documents to Note objects
   const data: Note[] = values.docs.map((doc) => ({
     id: doc.id,
     text: doc.data().text,
@@ -33,16 +34,9 @@ export default function HomeScreen() {
     mark: doc.data().mark,
   }));
 
-  const addNote = async () => {
-    try {
-      await addDoc(collection(database, "notes"), { text, imageUrls: [] });
-      setText("");
-    } catch (error) {
-      Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
-    }
-  };
-
+  // delete note from Firebase
   const deleteNote = async (index: number) => {
+    setDeletingNote(true);
     try {
       if (!data) {
         console.log("No notes found");
@@ -51,94 +45,79 @@ export default function HomeScreen() {
 
       await deleteDoc(doc(collection(database, "notes"), data[index].id));
     } catch (error) {
+      console.log("Error deleting note:", error);
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
     }
+    setDeletingNote(false);
   };
 
   return (
-    <View style={styles.container}>
-      {/* conditionally render loading or error message */}
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Enter a note"
-        value={text}
-        onChangeText={setText}
-      />
-      <Button title="Add Note" onPress={addNote} />
-      <Link href={{ pathname: "/map" }}>map</Link>
-      <ScrollView style={styles.notesContainer}>
-        {data &&
-          data.map((note, index) => (
-            <View key={index} style={styles.noteContainer}>
-              <Link href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
-                <Text style={styles.note}>
-                  {index + 1}.{" "}
-                  {note.text.length > 24
-                    ? `${note.text.slice(0, 24)}...`
-                    : note.text}
-                </Text>
-                {note.imageUrls.length > 0 && (
-                  <View>
-                    {note.imageUrls.map((imageUrl, index) => (
-                      <Image
-                        key={index}
-                        source={{ uri: imageUrl }}
-                        style={{ width: 100, height: 100 }}
-                      />
-                    ))}
+    <SafeAreaView className="flex-1 bg-gray-100">
+      <View className="flex-1">
+        <View className="bg-white shadow-md py-4">
+          <View className="flex-row justify-between items-center px-4">
+            <Text className="text-2xl font-bold text-gray-800">My Notes</Text>
+            <Pressable
+              className="bg-blue-500 px-4 py-2 rounded-full"
+              onPress={() => router.push("/map")}>
+              <Text className="text-white font-semibold">Map</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {loading && (
+          <Text className="text-center text-gray-600 mt-4">
+            Loading notes...
+          </Text>
+        )}
+        {error && (
+          <Text className="text-center text-red-500 mt-4">
+            Error: {error.message}
+          </Text>
+        )}
+
+        <ScrollView className="flex-1 px-4 pt-2">
+          {data &&
+            data.map((note, index) => (
+              <View
+                key={index}
+                className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden">
+                <Link
+                  href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
+                  <View className="p-4">
+                    <Text className="text-lg text-gray-800 mb-2">
+                      {note.text.length > 50
+                        ? `${note.text.slice(0, 50)}...`
+                        : note.text}
+                    </Text>
+                    {note.imageUrls.length > 0 && (
+                      <View className="flex-row flex-wrap">
+                        {note.imageUrls.map((imageUrl, imgIndex) => (
+                          <Image
+                            key={imgIndex}
+                            source={{ uri: imageUrl }}
+                            className="w-16 h-16 rounded-xl mr-2 mb-2"
+                          />
+                        ))}
+                      </View>
+                    )}
                   </View>
-                )}
-              </Link>
-              <Pressable
-                onPress={() => deleteNote(index)}
-                style={styles.deleteButton}>
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </Pressable>
-            </View>
-          ))}
-      </ScrollView>
-    </View>
+                </Link>
+                <View className="bg-gray-50 px-4 py-2 flex-row justify-end">
+                  {deletingNote ? (
+                    <Text className="text-gray-600">Deleting...</Text>
+                  ) : (
+                    <Pressable
+                      onPress={() => deleteNote(index)}
+                      className="bg-red-500 px-3 py-1 rounded-full">
+                      <Text className="text-white font-semibold">Delete</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            ))}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  input: {
-    height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-    width: "100%",
-  },
-  notesContainer: {
-    marginTop: 20,
-    width: "100%",
-  },
-  noteContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  note: {
-    flex: 1,
-  },
-  deleteButton: {
-    padding: 5,
-    backgroundColor: "#ff6347",
-    borderRadius: 3,
-  },
-  deleteButtonText: {
-    color: "#fff",
-  },
-});
