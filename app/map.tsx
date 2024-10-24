@@ -1,5 +1,5 @@
 import MapView, { LatLng, Marker, Region } from "react-native-maps";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import type { NoteMarker } from "@/types";
 import { MarkerModal } from "@/components/MarkerModal";
 import { useCollection } from "react-firebase-hooks/firestore";
@@ -7,12 +7,49 @@ import { collection } from "firebase/firestore";
 import { database } from "../firebase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import * as Location from "expo-location";
 
 export default function MapScreen() {
   const [showModal, setShowModal] = useState(false);
   const [markers, setMarkers] = useState<NoteMarker[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<NoteMarker | null>(null);
   const router = useRouter();
+
+  const mapView = useRef<MapView | null>(null);
+  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+
+  useEffect(() => {
+    async function startListening() {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        return;
+      }
+
+      locationSubscription.current = await Location.watchPositionAsync({
+        distanceInterval: 1000,
+        accuracy: Location.Accuracy.High,
+      }, (lokation) => {
+        const newRegion = {
+          latitude: lokation.coords.latitude,
+          longitude: lokation.coords.longitude,
+          latitudeDelta: 20,
+          longitudeDelta: 20,
+        };
+        
+        setCurrentRegion(newRegion)
+        if (mapView.current) {
+          mapView.current.animateToRegion(newRegion);
+        }
+      })
+    }
+    startListening()
+    return () => {
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+      }
+    }
+  }, [])
 
   // get the current location from the search params if available.
   const params = useLocalSearchParams<{
