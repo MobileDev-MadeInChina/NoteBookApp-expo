@@ -43,7 +43,7 @@ export function MarkerModal({
     imageUrls: [],
     mark: marker,
   });
-
+  // UseEffect to fetch note from Firebase on mount
   useEffect(() => {
     const fetchNote = async () => {
       try {

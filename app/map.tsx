@@ -11,45 +11,59 @@ import * as Location from "expo-location";
 
 export default function MapScreen() {
   const [showModal, setShowModal] = useState(false);
+  // State for all markers
   const [markers, setMarkers] = useState<NoteMarker[]>([]);
+  // state for selected marker
   const [selectedMarker, setSelectedMarker] = useState<NoteMarker | null>(null);
+  // set the current region based on the url param coordinates or default values (Guldbergsgade)
+  const [currentRegion, setCurrentRegion] = useState<Region>();
+  // router hook
   const router = useRouter();
-
+  // ref to mapView
   const mapView = useRef<MapView | null>(null);
-  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
-
+  // ref to location subscription
+  const locationSubscription = useRef<Location.LocationSubscription | null>(
+    null
+  );
+  // useEffect to listen for location updates.
   useEffect(() => {
     async function startListening() {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Permission to access location was denied');
+      if (status !== "granted") {
+        alert("Permission to access location was denied");
         return;
       }
-
-      locationSubscription.current = await Location.watchPositionAsync({
-        distanceInterval: 1000,
-        accuracy: Location.Accuracy.High,
-      }, (lokation) => {
-        const newRegion = {
-          latitude: lokation.coords.latitude,
-          longitude: lokation.coords.longitude,
-          latitudeDelta: 20,
-          longitudeDelta: 20,
-        };
-        
-        setCurrentRegion(newRegion)
-        if (mapView.current) {
-          mapView.current.animateToRegion(newRegion);
+      // watchPositionAsync returns a LocationSubscription object
+      locationSubscription.current = await Location.watchPositionAsync(
+        {
+          distanceInterval: 1000,
+          accuracy: Location.Accuracy.High,
+        },
+        (lokation) => {
+          const newRegion = {
+            latitude: lokation.coords.latitude,
+            longitude: lokation.coords.longitude,
+            latitudeDelta: 20,
+            longitudeDelta: 20,
+          };
+          // Update the currentRegion state with the new region
+          setCurrentRegion(newRegion);
+          // Animate the map to the new region
+          if (mapView.current) {
+            mapView.current.animateToRegion(newRegion);
+          }
         }
-      })
+      );
     }
-    startListening()
+    // Start listening for location updates
+    startListening();
     return () => {
+      // Clean up location subscription on unmount
       if (locationSubscription.current) {
         locationSubscription.current.remove();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // get the current location from the search params if available.
   const params = useLocalSearchParams<{
@@ -78,14 +92,6 @@ export default function MapScreen() {
       });
     }
   }, [coordinates]);
-
-  // set the current region based on the url param coordinates or default values (Guldbergsgade)
-  const [currentRegion, setCurrentRegion] = useState<Region>({
-    latitude: coordinates?.latitude || 55.6704,
-    longitude: coordinates?.longitude || 12.5785,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
-  });
 
   const [values] = useCollection(collection(database, "notes"));
 

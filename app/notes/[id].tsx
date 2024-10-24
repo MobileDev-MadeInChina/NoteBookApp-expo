@@ -1,5 +1,5 @@
 import { database } from "@/firebase";
-import { Link, Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { updateDoc, collection, doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -21,7 +21,6 @@ import {
   getStorage,
 } from "firebase/storage";
 import { Note } from "@/types";
-import "../../global.css";
 
 export default function NoteScreen() {
   const params = useLocalSearchParams();
@@ -123,7 +122,7 @@ export default function NoteScreen() {
         })
       );
       // redirect to home screen
-      Redirect({ href: "/" });
+      router.push("/");
     } catch (error) {
       console.log("Error updating note:", error);
       Alert.alert("Error", "Failed to update note", [{ text: "Okay" }]);
