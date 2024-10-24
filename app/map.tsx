@@ -1,5 +1,5 @@
-import MapView, { Marker, Region } from "react-native-maps";
-import { useEffect, useState } from "react";
+import MapView, { LatLng, Marker, Region } from "react-native-maps";
+import { useEffect, useMemo, useState } from "react";
 import type { NoteMarker } from "@/types";
 import { MarkerModal } from "@/components/MarkerModal";
 import { useCollection } from "react-firebase-hooks/firestore";
@@ -15,17 +15,36 @@ export default function MapScreen() {
   const router = useRouter();
 
   // get the current location from the search params if available.
-  const params = useLocalSearchParams();
-  const coordinate = params.latitude
-    ? {
-        latitude: parseFloat(params.latitude as string),
-        longitude: parseFloat(params.longitude as string),
-      }
-    : null;
+  const params = useLocalSearchParams<{
+    latitude: string;
+    longitude: string;
+  }>();
+  // useMemo to memoize the coordinates object to prevent unnecessary re-renders
+  const coordinates = useMemo(() => {
+    return params.latitude && params.longitude
+      ? {
+          latitude: parseFloat(params.latitude),
+          longitude: parseFloat(params.longitude),
+        }
+      : null;
+  }, [params.latitude, params.longitude]);
+
+  // set the current region based on the search params or default values (Guldbergsgade)
+  useEffect(() => {
+    if (coordinates) {
+      setCurrentRegion({
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }
+  }, [coordinates]);
+
   // set the current region based on the url param coordinates or default values (Guldbergsgade)
   const [currentRegion, setCurrentRegion] = useState<Region>({
-    latitude: coordinate?.latitude || 55.6704,
-    longitude: coordinate?.longitude || 12.5785,
+    latitude: coordinates?.latitude || 55.6704,
+    longitude: coordinates?.longitude || 12.5785,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   });

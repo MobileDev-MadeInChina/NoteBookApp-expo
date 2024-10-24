@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   ScrollView,
@@ -90,6 +89,18 @@ export default function HomeScreen() {
                         ? `${note.text.slice(0, 50)}...`
                         : note.text}
                     </Text>
+                    <Link
+                      className="mt-5 bg-blue-500 rounded-full p-3 shadow-md mx-auto"
+                      href={{
+                        pathname: "/map",
+                        params: {
+                          latitude: note.mark?.coordinate.latitude,
+                          longitude: note.mark?.coordinate.longitude,
+                        },
+                      }}>
+                      View in Map
+                    </Link>
+
                     {note.imageUrls.length > 0 && (
                       <View className="flex-row flex-wrap">
                         {note.imageUrls.map((imageUrl, imgIndex) => (
