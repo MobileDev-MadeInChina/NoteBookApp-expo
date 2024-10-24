@@ -19,8 +19,9 @@ export default function MapScreen() {
     latitude: string;
     longitude: string;
   }>();
+
   // useMemo to memoize the coordinates object to prevent unnecessary re-renders
-  const coordinates = useMemo(() => {
+  const coordinates: LatLng | null = useMemo(() => {
     return params.latitude && params.longitude
       ? {
           latitude: parseFloat(params.latitude),
