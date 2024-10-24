@@ -221,6 +221,7 @@ export function MarkerModal({
           ) : (
             <Pressable
               style={styles.button}
+              // conditionally call updateNote() or addNote() based on note.id
               onPress={() => (note.id !== "" ? updateNote() : addNote())}>
               <Text style={styles.buttonText}>
                 {note.id !== "" ? "Update" : "Save"}
