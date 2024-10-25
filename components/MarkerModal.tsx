@@ -57,7 +57,7 @@ export function MarkerModal({
       setIsLoading(false);
     }
     fetchNote();
-  }, [marker, note.imageUrls]);
+  }, [marker.key]);
 
   // launch image picker
   async function handleImagePicker() {
@@ -134,18 +134,15 @@ export function MarkerModal({
                 />
                 <Pressable
                   onPress={() => {
-                    if (imagePath.includes("http")) {
+                    if (imagePath.includes("https://firebasestorage")) {
                       setDeletedImageUrls((urls) => [...urls, imagePath]);
-                      setNote((note) => ({
-                        ...note,
-                        imageUrls: note.imageUrls.filter((_, i) => i !== index),
-                      }));
-                    } else {
-                      setNote((note) => ({
-                        ...note,
-                        imageUrls: note.imageUrls.filter((_, i) => i !== index),
-                      }));
-                    }
+                    } 
+                    setNote((note) => ({
+                      ...note,
+                      imageUrls: note.imageUrls.filter(
+                        (path) => path !== imagePath
+                      ),
+                    }));
                   }}
                   className="bg-red-500 py-2 px-3 rounded-lg">
                   <Text className="text-white">Remove</Text>

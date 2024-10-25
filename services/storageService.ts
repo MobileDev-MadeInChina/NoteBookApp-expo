@@ -11,7 +11,7 @@ import {
 export async function uploadImage(imagePath: string): Promise<string> {
   const res = await fetch(imagePath);
   const blob = await res.blob();
-  const storageRef = ref(storage, `images/${imagePath}`);
+  const storageRef = ref(storage, `images/${Date.now()}.jpg`);
   await uploadBytes(storageRef, blob).then((snapshot) => {
     console.log("Uploaded a blob or file!", snapshot);
   });

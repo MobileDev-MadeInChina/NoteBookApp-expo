@@ -1,6 +1,13 @@
 import { database } from "@/firebase";
 import { Note } from "@/types";
-import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { deleteImage, uploadImage } from "./storageService";
 
 // fetch note from Firebase by id
@@ -18,7 +25,6 @@ export async function selectNoteById(id: string) {
       imageUrls: noteDoc.get("imageUrls"),
       mark: noteDoc.get("mark"),
     };
-    console.log("Fetched imageurls: ", note.imageUrls);
 
     return note;
   } catch (error) {
@@ -41,7 +47,6 @@ export async function selectNoteByMarkerKey(key: string) {
       imageUrls: noteDoc.get("imageUrls"),
       mark: noteDoc.get("mark"),
     };
-    console.log("Fetched imageurls: ", note.imageUrls);
 
     return note;
   } catch (error) {
@@ -59,6 +64,7 @@ export async function addNote(note: Note) {
     });
   } catch (error) {
     console.error("Error adding note:", error);
+    throw error;
   }
 }
 
@@ -81,7 +87,6 @@ export async function updateNote(note: Note, deletedImageUrls: string[]) {
         }
       }
     }
-    console.log("imageURL's to update: ", imageUrls);
 
     // update the note in Firebase
     await updateDoc(doc(collection(database, "notes"), note.id), {
@@ -98,3 +103,17 @@ export async function updateNote(note: Note, deletedImageUrls: string[]) {
     console.log("Error updating note:", error);
   }
 }
+
+// delete note from Firebase
+export const deleteNote = async (note: Note) => {
+  try {
+    const promises = note.imageUrls.map(async (imageUrl) => {
+      await deleteImage(imageUrl);
+    });
+    await Promise.all(promises);
+
+    await deleteDoc(doc(collection(database, "notes"), note.id));
+  } catch (error) {
+    console.log("Error deleting note:", error);
+  }
+};

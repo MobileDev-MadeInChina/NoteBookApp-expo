@@ -22,7 +22,6 @@ export default function NoteScreen() {
     imageUrls: [],
     mark: null,
   });
-  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // state for deleted image urls
@@ -72,11 +71,6 @@ export default function NoteScreen() {
     setIsSaving(false);
   }
 
-  // toggle editing state
-  const editNote = () => {
-    setIsEditing(!isEditing);
-  };
-
   return (
     <View className="flex-1 bg-gray-100 justify-center">
       <Pressable
@@ -93,88 +87,61 @@ export default function NoteScreen() {
             Loading note...
           </Text>
         )}
-        {isEditing ? (
-          <View>
-            <TextInput
-              className="h-28 border border-gray-300 mb-4 p-3 rounded-md bg-white shadow-sm w-full"
-              placeholder="Enter a note"
-              value={note.text}
-              onChangeText={(text) => setNote((note) => ({ ...note, text }))}
-              multiline
-            />
-            <Pressable
-              className="p-3 bg-red-500 rounded-full mb-4 shadow-md"
-              onPress={editNote}>
-              <Text className="text-white text-center font-medium">Cancel</Text>
-            </Pressable>
-            <Pressable
-              className="p-3 bg-green-500 rounded-full mt-4 shadow-md"
-              onPress={handleUpdateNote}>
-              <Text className="text-white text-center font-medium">Save</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View>
-            <Text className="text-lg font-semibold mb-4 text-center">
-              {note.text}
-            </Text>
-            <Button title="Edit Text" onPress={editNote} />
-
-            <View className="mt-6 space-y-4">
-              <Button title="Select Image" onPress={handleImagePicker} />
-              <Button title="Save" onPress={handleUpdateNote} />
+        <View>
+          <TextInput
+            className="border border-gray-300 mb-4 p-3 rounded-md bg-white shadow-sm w-full"
+            placeholder="Enter a note"
+            value={note.text}
+            onChangeText={(text) => setNote((note) => ({ ...note, text }))}
+            multiline
+          />
+          {note.imageUrls && note.imageUrls.length > 0 && (
+            <View className="flex-row flex-wrap mt-5 justify-center">
+              {note.imageUrls.map((imagePath, index) => (
+                <View key={index} className="relative mr-3 mb-3">
+                  <Image
+                    source={{ uri: imagePath }}
+                    className="w-28 h-28 rounded-md shadow-md"
+                  />
+                  <Pressable
+                    onPress={() => {
+                      if (imagePath.includes("https://firebasestorage")) {
+                        setDeletedImageUrls((urls) => [...urls, imagePath]);
+                      }
+                      setNote((note) => ({
+                        ...note,
+                        imageUrls: note.imageUrls.filter(
+                          (path) => path !== imagePath
+                        ),
+                      }));
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md">
+                    <Text className="text-white font-bold">X</Text>
+                  </Pressable>
+                </View>
+              ))}
             </View>
-            {note.mark && (
-              <Link
-                className="mt-5 bg-blue-500 rounded-full p-3 shadow-md mx-auto"
-                href={{
-                  pathname: "/map",
-                  params: {
-                    latitude: note.mark.coordinate.latitude,
-                    longitude: note.mark.coordinate.longitude,
-                  },
-                }}>
-                View in Map
-              </Link>
-            )}
+          )}
+        </View>
 
-            {note.imageUrls && note.imageUrls.length > 0 && (
-              <View className="flex-row flex-wrap mt-5 justify-center">
-                {note.imageUrls.map((imagePath, index) => (
-                  <View key={index} className="relative mr-3 mb-3">
-                    <Image
-                      source={{ uri: imagePath }}
-                      className="w-28 h-28 rounded-md shadow-md"
-                    />
-                    <Pressable
-                      onPress={() => {
-                        if (imagePath.includes("https://firebasestorage")) {
-                          setDeletedImageUrls((urls) => [...urls, imagePath]);
-                          setNote((note) => ({
-                            ...note,
-                            imageUrls: note.imageUrls.filter(
-                              (imagePath) => imagePath !== imagePath
-                            ),
-                          }));
-                          console.log("Image to delete: ", imagePath);
-                        } else {
-                          setNote((note) => ({
-                            ...note,
-                            imageUrls: note.imageUrls.filter(
-                              (imagePath) => imagePath !== imagePath
-                            ),
-                          }));
-                          console.log("removed image: ", imagePath);
-                        }
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md">
-                      <Text className="text-white font-bold">X</Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+        <View className="mt-6 space-y-4 border">
+          <Button title="Select Image" onPress={handleImagePicker} />
+        </View>
+
+        <Button title="Save" onPress={handleUpdateNote} />
+
+        {note.mark && (
+          <Link
+            className="mt-9 bg-blue-500 rounded-full p-3 shadow-md mx-auto border"
+            href={{
+              pathname: "/map",
+              params: {
+                latitude: note.mark.coordinate.latitude,
+                longitude: note.mark.coordinate.longitude,
+              },
+            }}>
+            View in Map
+          </Link>
         )}
       </View>
     </View>

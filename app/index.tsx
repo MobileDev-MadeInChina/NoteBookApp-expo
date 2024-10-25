@@ -1,18 +1,12 @@
 import React, { useState } from "react";
-import {
-  Text,
-  View,
-  ScrollView,
-  Alert,
-  Pressable,
-  Image,
-} from "react-native";
+import { Text, View, ScrollView, Alert, Pressable, Image } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { collection, doc, deleteDoc } from "firebase/firestore";
 import { Note } from "@/types";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { deleteNote } from "@/services/notesService";
 
 export default function HomeScreen() {
   // useCollection hook to fetch notes from Firebase
@@ -34,21 +28,17 @@ export default function HomeScreen() {
   }));
 
   // delete note from Firebase
-  const deleteNote = async (index: number) => {
+  async function handleDeleteNote(note: Note) {
     setDeletingNote(true);
     try {
-      if (!data) {
-        console.log("No notes found");
-        return;
-      }
-
-      await deleteDoc(doc(collection(database, "notes"), data[index].id));
+      await deleteNote(note);
+      Alert.alert("Success", "Note deleted successfully", [{ text: "OK" }]);
     } catch (error) {
       console.log("Error deleting note:", error);
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
     }
     setDeletingNote(false);
-  };
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
@@ -119,7 +109,7 @@ export default function HomeScreen() {
                     <Text className="text-gray-600">Deleting...</Text>
                   ) : (
                     <Pressable
-                      onPress={() => deleteNote(index)}
+                      onPress={() => handleDeleteNote(note)}
                       className="bg-red-500 px-3 py-1 rounded-full">
                       <Text className="text-white font-semibold">Delete</Text>
                     </Pressable>
