@@ -1,25 +1,20 @@
 import {
   Alert,
-  Button,
   Image,
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { storage, database } from "../firebase";
 import { useState, useEffect } from "react";
-import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
-import * as ImagePicker from "expo-image-picker";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref as storageRef,
-  uploadBytes,
-} from "firebase/storage";
 import { Note, NoteMarker } from "@/types";
+import {
+  addNote,
+  selectNoteByMarkerKey,
+  updateNote,
+} from "@/services/notesService";
+import { launchImagePicker } from "@/services/imagePicker";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
@@ -35,6 +30,7 @@ export function MarkerModal({
 }) {
   // State for deleted image urls
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   // State for displaying the note
   const [note, setNote] = useState<Note>({
@@ -43,187 +39,147 @@ export function MarkerModal({
     imageUrls: [],
     mark: marker,
   });
-  // UseEffect to fetch note from Firebase on mount
+
+  // UseEffect to fetch note from Firebase when marker changes
   useEffect(() => {
-    const fetchNote = async () => {
+    setIsLoading(true);
+    // fetch note from Firebase
+    async function fetchNote() {
       try {
-        // get note from Firebase on mark key
-        const tnote = await getDoc(doc(database, "notes", marker.key));
-        // if note exists, set it to the note state
-        if (tnote.exists()) {
-          const fetchedNote: Note = {
-            id: tnote.id,
-            text: tnote.get("text"),
-            imageUrls: tnote.get("imageUrls"),
-            mark: marker,
-          };
-          setNote(fetchedNote);
+        const note = await selectNoteByMarkerKey(marker.key);
+        if (note) {
+          setNote(note);
         }
       } catch (error) {
-        console.error("Error fetching note:", error);
+        console.log("Error loading note:", error);
+        Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);
       }
-    };
-
-    if (marker.key) {
-      fetchNote();
+      setIsLoading(false);
     }
-  }, [marker]);
+    fetchNote();
+  }, [marker, note.imageUrls]);
+
   // launch image picker
-  async function launchImagePicker() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled && result.assets.length > 0) {
-      setNote((prev) => ({
-        ...prev,
-        imageUrls: [...prev.imageUrls, result.assets[0].uri],
+  async function handleImagePicker() {
+    const imagePath = await launchImagePicker();
+    if (imagePath) {
+      setNote((note) => ({
+        ...note,
+        imageUrls: [...note.imageUrls, imagePath],
       }));
     }
   }
-  // upload image to Firebase Storage
-  async function uploadImage(imagePath: string) {
-    const res = await fetch(imagePath);
-    const blob = await res.blob();
-    const storageReference = storageRef(storage, `images/${Date.now()}.jpg`);
-    await uploadBytes(storageReference, blob);
-    return getDownloadURL(storageReference);
-  }
+
   // update note in Firebase
-  const updateNote = async () => {
+  async function handleUpdateNote() {
     setIsSaving(true);
     try {
-      // initialize imageUrls array
-      let imageUrls: string[] = [];
-      // Iterate through the imagePaths array and upload or add the image URLs to the imageUrls array
-      if (note && note.imageUrls.length > 0) {
-        for (let i = 0; i < note.imageUrls.length; i++) {
-          const imagePath = note.imageUrls[i];
-          if (!imagePath.includes("http")) {
-            // if not a URL, upload it to Firebase Storage and get the URL
-            const imageUrl = await uploadImage(imagePath);
-            imageUrls.push(imageUrl);
-          } else {
-            // if it's a URL, just add it to the array
-            imageUrls.push(imagePath);
-          }
-        }
-      }
-
-      // update the note in Firebase
-      await updateDoc(doc(database, "notes", note.id), {
-        text: note.text,
-        imageUrls,
-        mark: note.mark,
-      });
-
-      // delete removed images from storage
-      for (let i = 0; i < deletedImageUrls.length; i++) {
-        const imageUrl = deletedImageUrls[i];
-        await deleteImage(imageUrl);
-      }
-
+      await updateNote(note, deletedImageUrls);
       Alert.alert("Success", "Note saved successfully", [{ text: "OK" }]);
-      setShowModal(false);
     } catch (error) {
-      Alert.alert("Error", "Failed to save note", [{ text: "OK" }]);
-      console.error("Error updating note:", error);
+      console.log("Error updating note:", error);
+      Alert.alert("Error", "Failed to update note", [{ text: "Okay" }]);
     }
     // reset the marker and isSaving states
+    setShowModal(false);
     setMarker(null);
     setIsSaving(false);
-  };
-  // add note to Firebase
-  const addNote = async () => {
-    try {
-      await addDoc(collection(database, "notes"), {
-        text: note.text,
-        imageUrls: note.imageUrls,
-        mark: note.mark,
-      });
-      Alert.alert("Success", "Note added successfully", [{ text: "OK" }]);
-      setShowModal(false);
-    } catch (error) {
-      Alert.alert("Error", "Failed to add note", [{ text: "OK" }]);
-      console.error("Error adding note:", error);
-    }
-    setMarker(null);
-  };
-  // delete image from storage
-  const deleteImage = async (imageUrl: string) => {
-    try {
-      const imageRef = storageRef(storage, imageUrl);
-      await deleteObject(imageRef);
-      console.log("Image deleted:", imageUrl);
-    } catch (error) {
-      Alert.alert("Error", "Failed to delete image from storage", [
-        { text: "OK" },
-      ]);
-      console.error("Error deleting image:", error);
-    }
-  };
+  }
 
+  // add note to Firebase
+  async function handleAddNote() {
+    setIsSaving(true);
+    try {
+      await addNote(note);
+      Alert.alert("Success", "Note added successfully", [{ text: "OK" }]);
+    } catch (error: any) {
+      console.log("Error adding note:", error);
+      Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
+    }
+    setIsSaving(false);
+    setShowModal(false);
+    setMarker(null);
+  }
   return (
     <Modal animationType="slide" transparent={true} visible={showModal}>
-      <View style={styles.modalContainer}>
-        <Text style={styles.title}>Marker Details</Text>
+      <View className="flex-1 mt-24 mx-5 bg-white rounded-xl p-6 shadow-lg">
+        <Text className="text-2xl font-bold mb-4 text-center">
+          Marker Details
+        </Text>
+        {isLoading && (
+          <Text className="text-center text-gray-600 mb-4">
+            Loading note...
+          </Text>
+        )}
         <TextInput
           placeholder="Enter a note"
           value={note.text}
           onChangeText={(text) => setNote((prev) => ({ ...prev, text }))}
-          style={styles.input}
+          className="border border-gray-300 rounded-lg p-3 mb-4"
         />
-        <Button title="Select Image" onPress={launchImagePicker} />
+        <Pressable
+          onPress={handleImagePicker}
+          className="bg-blue-500 py-2 px-4 rounded-lg mb-4">
+          <Text className="text-white text-center font-semibold">
+            Select Image
+          </Text>
+        </Pressable>
         {note.imageUrls.length > 0 ? (
-          <View style={styles.imageContainer}>
+          <View className="mb-4">
             {note.imageUrls.map((imagePath, index) => (
-              <View key={index} style={styles.imageWrapper}>
-                <Image source={{ uri: imagePath }} style={styles.image} />
+              <View key={index} className="flex-row items-center mb-3">
+                <Image
+                  source={{ uri: imagePath }}
+                  className="w-24 h-24 rounded-md mr-3"
+                />
                 <Pressable
                   onPress={() => {
                     if (imagePath.includes("http")) {
-                      // if it's a URL, add it to the deletedImageUrls array
                       setDeletedImageUrls((urls) => [...urls, imagePath]);
-                      // remove it from the imagePaths array
                       setNote((note) => ({
                         ...note,
                         imageUrls: note.imageUrls.filter((_, i) => i !== index),
                       }));
                     } else {
-                      // if it's a local path, remove it from the imagePaths array
                       setNote((note) => ({
                         ...note,
                         imageUrls: note.imageUrls.filter((_, i) => i !== index),
                       }));
                     }
-                  }}>
-                  <Text>Remove</Text>
+                  }}
+                  className="bg-red-500 py-2 px-3 rounded-lg">
+                  <Text className="text-white">Remove</Text>
                 </Pressable>
               </View>
             ))}
           </View>
         ) : (
-          <Text style={styles.noImagesText}>No images found</Text>
+          <Text className="text-center text-gray-500 mb-4">
+            No images found
+          </Text>
         )}
-        <View style={styles.buttonRow}>
+        <View className="flex-row justify-between">
           <Pressable
-            style={styles.button}
+            className="bg-gray-500 py-2 px-4 rounded-lg flex-1 mr-2"
             onPress={() => {
               setMarker(null);
               setShowModal(false);
             }}>
-            <Text style={styles.buttonText}>Cancel</Text>
+            <Text className="text-white text-center font-semibold">Cancel</Text>
           </Pressable>
           {isSaving ? (
-            <p>Saving...</p>
+            <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">
+              <Text className="text-white text-center font-semibold">
+                Saving...
+              </Text>
+            </View>
           ) : (
             <Pressable
-              style={styles.button}
-              // conditionally call updateNote() or addNote() based on note.id
-              onPress={() => (note.id !== "" ? updateNote() : addNote())}>
-              <Text style={styles.buttonText}>
+              className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2"
+              onPress={() =>
+                note.id !== "" ? handleUpdateNote() : handleAddNote()
+              }>
+              <Text className="text-white text-center font-semibold">
                 {note.id !== "" ? "Update" : "Save"}
               </Text>
             </Pressable>
@@ -233,60 +189,3 @@ export function MarkerModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    marginTop: 100,
-    marginHorizontal: 20,
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 20,
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  imageContainer: {
-    marginVertical: 10,
-  },
-  imageWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-  },
-  noImagesText: {
-    textAlign: "center",
-    color: "#888",
-    marginVertical: 10,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  button: {
-    padding: 10,
-    backgroundColor: "#ff6347",
-    borderRadius: 5,
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-  },
-});
