@@ -79,17 +79,6 @@ export default function HomeScreen() {
                         ? `${note.text.slice(0, 50)}...`
                         : note.text}
                     </Text>
-                    <Link
-                      className="mt-5 bg-blue-500 rounded-full p-3 shadow-md mx-auto"
-                      href={{
-                        pathname: "/map",
-                        params: {
-                          latitude: note.mark?.coordinate.latitude,
-                          longitude: note.mark?.coordinate.longitude,
-                        },
-                      }}>
-                      View in Map
-                    </Link>
 
                     {note.imageUrls.length > 0 && (
                       <View className="flex-row flex-wrap">
@@ -104,13 +93,27 @@ export default function HomeScreen() {
                     )}
                   </View>
                 </Link>
-                <View className="bg-gray-50 px-4 py-2 flex-row justify-end">
+
+                <View className="bg-gray-50 px-4 py-3 flex-row justify-between items-center">
+                  <Link
+                    className="bg-blue-500 rounded-full px-4 py-2 shadow-md"
+                    href={{
+                      pathname: "/map",
+                      params: {
+                        latitude: note.mark?.coordinate.latitude,
+                        longitude: note.mark?.coordinate.longitude,
+                      },
+                    }}>
+                    <Text className="text-white font-semibold">
+                      View in Map
+                    </Text>
+                  </Link>
                   {deletingNote ? (
                     <Text className="text-gray-600">Deleting...</Text>
                   ) : (
                     <Pressable
                       onPress={() => handleDeleteNote(note)}
-                      className="bg-red-500 px-3 py-1 rounded-full">
+                      className="bg-red-500 px-4 py-2 rounded-full">
                       <Text className="text-white font-semibold">Delete</Text>
                     </Pressable>
                   )}

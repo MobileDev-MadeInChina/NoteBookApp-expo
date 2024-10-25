@@ -136,7 +136,7 @@ export function MarkerModal({
                   onPress={() => {
                     if (imagePath.includes("https://firebasestorage")) {
                       setDeletedImageUrls((urls) => [...urls, imagePath]);
-                    } 
+                    }
                     setNote((note) => ({
                       ...note,
                       imageUrls: note.imageUrls.filter(
