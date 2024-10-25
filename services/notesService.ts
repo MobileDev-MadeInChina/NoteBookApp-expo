@@ -57,9 +57,15 @@ export async function selectNoteByMarkerKey(key: string) {
 // add note to Firebase
 export async function addNote(note: Note) {
   try {
+    // upload images to Firebase Storage and get URLs
+    const promises = note.imageUrls.map(async (imageUrl) => {
+      return await uploadImage(imageUrl);
+    });
+    const urls = await Promise.all(promises);
+    // add note to Firebase
     await addDoc(collection(database, "notes"), {
       text: note.text,
-      imageUrls: note.imageUrls,
+      imageUrls: urls,
       mark: note.mark,
     });
   } catch (error) {
