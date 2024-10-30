@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text, View, ScrollView, Alert, Pressable, Image } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { database } from "../firebase";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, doc, deleteDoc } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { Note } from "@/types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteNote } from "@/services/notesService";
+import { useAuth } from "./AuthContext";
+import { getAuth, signOut } from "firebase/auth";
 
 export default function HomeScreen() {
   // useCollection hook to fetch notes from Firebase
@@ -14,6 +16,17 @@ export default function HomeScreen() {
   // state for deleting note
   const [deletingNote, setDeletingNote] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/register");
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading) {
+    return <Text>Loading user...</Text>;
+  }
 
   if (values === undefined) {
     return null;
@@ -38,6 +51,16 @@ export default function HomeScreen() {
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
     }
     setDeletingNote(false);
+  }
+
+  async function handleLogout() {
+    try {
+      await signOut(getAuth());
+      router.replace("/login");
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      Alert.alert("Error", "Failed to sign out. Please try again.");
+    }
   }
 
   return (
@@ -121,6 +144,16 @@ export default function HomeScreen() {
               </View>
             ))}
         </ScrollView>
+        {/* Logout button */}
+        <View className="absolute bottom-4 left-0 right-0 items-center">
+          <Pressable
+            className="bg-red-500 px-6 py-3 rounded-full shadow-md"
+            onPress={handleLogout}>
+            <Text className="text-white font-semibold">
+              Logout: {user?.email}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );

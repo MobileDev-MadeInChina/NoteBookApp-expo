@@ -7,10 +7,9 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import "react-native-reanimated";
-import "../global.css";
-
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { AuthProvider } from "./AuthContext";
+import "../global.css";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -32,13 +31,17 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="notes/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-        <Stack.Screen name="map" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="map" options={{ headerShown: false }} />
+          <Stack.Screen name="notes/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
