@@ -8,8 +8,10 @@ import { database } from "../firebase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import * as Location from "expo-location";
+import { useAuth } from "./AuthContext";
 
 export default function MapScreen() {
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   // State for all markers
   const [markers, setMarkers] = useState<NoteMarker[]>([]);
@@ -19,6 +21,8 @@ export default function MapScreen() {
   const [currentRegion, setCurrentRegion] = useState<Region>();
   // router hook
   const router = useRouter();
+  // useCollection hook to fetch notes from Firebase
+  const [values] = useCollection(user ? collection(database, user.uid) : null);
   // ref to mapView
   const mapView = useRef<MapView | null>(null);
   // ref to location subscription
@@ -92,8 +96,6 @@ export default function MapScreen() {
       });
     }
   }, [coordinates]);
-
-  const [values] = useCollection(collection(database, "notes"));
 
   // useEffect to fetch notes from Firebase and set the markers state
   useEffect(() => {

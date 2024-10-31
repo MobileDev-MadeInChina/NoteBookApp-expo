@@ -1,4 +1,3 @@
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Text, View, TextInput, TouchableOpacity } from "react-native";
