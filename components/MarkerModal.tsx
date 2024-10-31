@@ -15,6 +15,7 @@ import {
   updateNote,
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
+import { useAuth } from "@/app/AuthContext";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
@@ -28,6 +29,7 @@ export function MarkerModal({
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const { user } = useAuth();
   // State for deleted image urls
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,10 +45,15 @@ export function MarkerModal({
   // UseEffect to fetch note from Firebase when marker changes
   useEffect(() => {
     setIsLoading(true);
+
     // fetch note from Firebase
     async function fetchNote() {
       try {
-        const note = await selectNoteByMarkerKey(marker.key);
+        if (!user) {
+          console.log("No user found");
+          return;
+        }
+        const note = await selectNoteByMarkerKey(marker.key, user.uid);
         if (note) {
           setNote(note);
         }
@@ -57,7 +64,7 @@ export function MarkerModal({
       setIsLoading(false);
     }
     fetchNote();
-  }, [marker.key]);
+  }, [marker.key, user]);
 
   // launch image picker
   async function handleImagePicker() {
@@ -74,7 +81,11 @@ export function MarkerModal({
   async function handleUpdateNote() {
     setIsSaving(true);
     try {
-      await updateNote(note, deletedImageUrls);
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
+      await updateNote(note, deletedImageUrls, user.uid);
       Alert.alert("Success", "Note saved successfully", [{ text: "OK" }]);
     } catch (error) {
       console.log("Error updating note:", error);
@@ -90,7 +101,11 @@ export function MarkerModal({
   async function handleAddNote() {
     setIsSaving(true);
     try {
-      await addNote(note);
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
+      await addNote(note, user.uid);
       Alert.alert("Success", "Note added successfully", [{ text: "OK" }]);
     } catch (error: any) {
       console.log("Error adding note:", error);

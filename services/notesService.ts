@@ -11,9 +11,9 @@ import {
 import { deleteImage, uploadImage } from "./storageService";
 
 // fetch note from Firebase by id
-export async function selectNoteById(id: string) {
+export async function selectNoteById(id: string, userId: string) {
   try {
-    const noteDoc = await getDoc(doc(collection(database, "notes"), id));
+    const noteDoc = await getDoc(doc(collection(database, userId), id));
 
     if (!noteDoc.exists()) {
       console.log("No note found");
@@ -33,9 +33,9 @@ export async function selectNoteById(id: string) {
 }
 
 // Fetch note from Firebase by marker key
-export async function selectNoteByMarkerKey(key: string) {
+export async function selectNoteByMarkerKey(key: string, userId: string) {
   try {
-    const noteDoc = await getDoc(doc(collection(database, "notes"), key));
+    const noteDoc = await getDoc(doc(collection(database, userId), key));
 
     if (!noteDoc.exists()) {
       console.log("No note found");
@@ -55,7 +55,7 @@ export async function selectNoteByMarkerKey(key: string) {
 }
 
 // add note to Firebase
-export async function addNote(note: Note) {
+export async function addNote(note: Note, userId: string) {
   try {
     // upload images to Firebase Storage and get URLs
     const promises = note.imageUrls.map(async (imageUrl) => {
@@ -63,7 +63,7 @@ export async function addNote(note: Note) {
     });
     const urls = await Promise.all(promises);
     // add note to Firebase
-    await addDoc(collection(database, "notes"), {
+    await addDoc(collection(database, userId), {
       text: note.text,
       imageUrls: urls,
       mark: note.mark,
@@ -75,7 +75,11 @@ export async function addNote(note: Note) {
 }
 
 // update note in Firebase
-export async function updateNote(note: Note, deletedImageUrls: string[]) {
+export async function updateNote(
+  note: Note,
+  deletedImageUrls: string[],
+  userId: string
+) {
   try {
     // initialize imageUrls array
     let imageUrls: string[] = [];
@@ -95,7 +99,7 @@ export async function updateNote(note: Note, deletedImageUrls: string[]) {
     }
 
     // update the note in Firebase
-    await updateDoc(doc(collection(database, "notes"), note.id), {
+    await updateDoc(doc(collection(database, userId), note.id), {
       text: note.text,
       imageUrls,
     });
@@ -111,14 +115,14 @@ export async function updateNote(note: Note, deletedImageUrls: string[]) {
 }
 
 // delete note from Firebase
-export const deleteNote = async (note: Note) => {
+export const deleteNote = async (note: Note, userId: string) => {
   try {
     const promises = note.imageUrls.map(async (imageUrl) => {
       await deleteImage(imageUrl);
     });
     await Promise.all(promises);
 
-    await deleteDoc(doc(collection(database, "notes"), note.id));
+    await deleteDoc(doc(collection(database, userId), note.id));
   } catch (error) {
     console.log("Error deleting note:", error);
   }

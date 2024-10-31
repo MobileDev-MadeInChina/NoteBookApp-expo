@@ -1,4 +1,3 @@
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Text, View, TextInput, TouchableOpacity } from "react-native";
@@ -9,9 +8,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
 
-  // If user is already logged in, redirect to home
   if (user) {
     router.replace("/");
     return null;
@@ -20,17 +18,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      console.log("User logged in:", userCredential.user);
-
-      // Redirect to home screen
-      router.push("/");
+      await login(email, password);
     } catch (error) {
       console.log("Error logging in:", error);
       Alert.alert("Error", "Failed to login", [{ text: "Okay" }]);

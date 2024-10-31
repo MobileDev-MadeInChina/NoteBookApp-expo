@@ -10,7 +10,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, register } = useAuth();
 
   // If user is already logged in, redirect to home
   if (user) {
@@ -26,15 +26,13 @@ export default function RegisterScreen() {
       return;
     }
     try {
-      const auth = getAuth();
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      console.log("User registered:", userCredential.user);
+      const userCredential = await register(email, password);
+      console.log("User registered:", userCredential);
       // Redirect to home screen
       router.push("/");
+      Alert.alert(`Welcome ${userCredential.email}`, "You are now registred", [
+        { text: "Okay" },
+      ]);
     } catch (error) {
       console.log("Error creating user:", error);
       Alert.alert("Error", "Failed to register", [{ text: "Okay" }]);

@@ -12,8 +12,10 @@ import {
 import { Note } from "@/types";
 import { launchImagePicker } from "@/services/imagePicker";
 import { selectNoteById, updateNote } from "@/services/notesService";
+import { useAuth } from "../AuthContext";
 
 export default function NoteScreen() {
+  const { user } = useAuth();
   const params = useLocalSearchParams();
   const router = useRouter();
   const [note, setNote] = useState<Note>({
@@ -44,7 +46,11 @@ export default function NoteScreen() {
     // fetch note from Firebase
     async function fetchNote() {
       try {
-        const note = await selectNoteById(params.id as string);
+        if (!user) {
+          console.log("No user found");
+          return;
+        }
+        const note = await selectNoteById(params.id as string, user.uid);
         if (note) {
           setNote(note);
         }
@@ -55,13 +61,17 @@ export default function NoteScreen() {
       setIsLoading(false);
     }
     fetchNote();
-  }, [params.id]);
+  }, [params.id, user]);
 
   // update note in Firebase
   async function handleUpdateNote() {
     setIsSaving(true);
     try {
-      await updateNote(note, deletedImageUrls);
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
+      await updateNote(note, deletedImageUrls, user.uid);
       router.push("/");
       Alert.alert("Success", "Note saved successfully", [{ text: "OK" }]);
     } catch (error) {

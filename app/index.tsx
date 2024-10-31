@@ -8,15 +8,17 @@ import { Note } from "@/types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteNote } from "@/services/notesService";
 import { useAuth } from "./AuthContext";
-import { getAuth, signOut } from "firebase/auth";
+import LogoutButton from "@/components/LogOutButton";
 
 export default function HomeScreen() {
+  const { user, loading: authLoading } = useAuth();
   // useCollection hook to fetch notes from Firebase
-  const [values, loading, error] = useCollection(collection(database, "notes"));
+  const [values, loading, error] = useCollection(
+    user ? collection(database, user.uid) : null
+  );
   // state for deleting note
   const [deletingNote, setDeletingNote] = useState(false);
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,23 +46,17 @@ export default function HomeScreen() {
   async function handleDeleteNote(note: Note) {
     setDeletingNote(true);
     try {
-      await deleteNote(note);
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
+      await deleteNote(note, user.uid);
       Alert.alert("Success", "Note deleted successfully", [{ text: "OK" }]);
     } catch (error) {
       console.log("Error deleting note:", error);
       Alert.alert("Error", "Failed to delete note", [{ text: "Okay" }]);
     }
     setDeletingNote(false);
-  }
-
-  async function handleLogout() {
-    try {
-      await signOut(getAuth());
-      router.replace("/login");
-    } catch (error) {
-      console.error("Error signing out: ", error);
-      Alert.alert("Error", "Failed to sign out. Please try again.");
-    }
   }
 
   return (
@@ -89,6 +85,10 @@ export default function HomeScreen() {
         )}
 
         <ScrollView className="flex-1 px-4 pt-2">
+          {data && data.length === 0 && (
+            <Text className="text-center text-gray-600 mt-4">No notes</Text>
+          )}
+          <View className="flex-row flex-wrap mt-5 justify-center"></View>
           {data &&
             data.map((note, index) => (
               <View
@@ -146,13 +146,7 @@ export default function HomeScreen() {
         </ScrollView>
         {/* Logout button */}
         <View className="absolute bottom-4 left-0 right-0 items-center">
-          <Pressable
-            className="bg-red-500 px-6 py-3 rounded-full shadow-md"
-            onPress={handleLogout}>
-            <Text className="text-white font-semibold">
-              Logout: {user?.email}
-            </Text>
-          </Pressable>
+          <LogoutButton />
         </View>
       </View>
     </SafeAreaView>
