@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteNote } from "@/services/notesService";
 import { useAuth } from "./AuthContext";
 import LogoutButton from "@/components/LogOutButton";
+import { HelloWave } from "@/components/HelloWave";
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuth();
@@ -86,7 +87,10 @@ export default function HomeScreen() {
 
         <ScrollView className="flex-1 px-4 pt-2">
           {data && data.length === 0 && (
-            <Text className="text-center text-gray-600 mt-4">No notes</Text>
+            <View className="flex-1 items-center justify-center">
+              <Text className="text-center text-gray-600 mb-4">No notes</Text>
+              <HelloWave />
+            </View>
           )}
           <View className="flex-row flex-wrap mt-5 justify-center"></View>
           {data &&
