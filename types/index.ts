@@ -3,7 +3,7 @@ import { LatLng } from "react-native-maps";
 // types/index.ts
 export type Note = {
   id: string;
-  text: string | null; // to allow the user to choose between text or voice note
+  text: string;
   imageUrls: string[];
   mark: NoteMarker | null;
   voiceNoteUrl?: string; // Add optional field for voice note URL

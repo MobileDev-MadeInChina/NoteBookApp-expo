@@ -9,10 +9,15 @@ export const startRecording = async () => {
       throw new Error("Audio recording permissions not granted");
     }
 
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
 
     recording = new Audio.Recording();
-    await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    await recording.prepareToRecordAsync(
+      Audio.RecordingOptionsPresets.HIGH_QUALITY
+    );
     await recording.startAsync();
   } catch (error) {
     console.error("Failed to start recording:", error);

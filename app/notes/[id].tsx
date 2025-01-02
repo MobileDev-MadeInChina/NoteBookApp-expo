@@ -23,6 +23,7 @@ export default function NoteScreen() {
     text: "",
     imageUrls: [],
     mark: null,
+    voiceNoteUrl: undefined,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

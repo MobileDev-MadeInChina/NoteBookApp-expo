@@ -8,7 +8,12 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
-import { deleteImage, uploadImage } from "./storageService";
+import {
+  deleteImage,
+  deleteVoiceNote,
+  uploadImage,
+  uploadVoiceNote,
+} from "./storageService";
 
 // fetch note from Firebase by id
 export async function selectNoteById(id: string, userId: string) {
@@ -67,12 +72,18 @@ export async function addNote(note: Note, userId: string) {
     });
     const urls = await Promise.all(promises);
 
+    // Upload voice note to Firebase Storage and get URL
+    let downloadUrl: string | null = null;
+    if (note.voiceNoteUrl) {
+      downloadUrl = await uploadVoiceNote(note.voiceNoteUrl);
+    }
+
     // Add note to Firebase, including the voiceNoteUrl if available
     await addDoc(collection(database, userId), {
       text: note.text,
       imageUrls: urls,
       mark: note.mark,
-      voiceNoteUrl: note.voiceNoteUrl || null, // Save voice note URL
+      voiceNoteUrl: downloadUrl || null, // Save voice note URL
     });
   } catch (error) {
     console.error("Error adding note:", error);
@@ -105,12 +116,21 @@ export async function updateNote(
       }
     }
 
+    // Upload voice note to Firebase Storage and get URL
+    let downloadUrl: string | null = null;
+    if (note.voiceNoteUrl) {
+      // delete old voice note from Firebase Storage
+      await deleteVoiceNote(note.voiceNoteUrl);
+      // upload voice note to Firebase Storage
+      downloadUrl = await uploadVoiceNote(note.voiceNoteUrl);
+    }
+
     // Update the note in Firebase, including the voiceNoteUrl
     await updateDoc(doc(collection(database, userId), note.id), {
       text: note.text,
       imageUrls,
       mark: note.mark,
-      voiceNoteUrl: note.voiceNoteUrl || null, // Save voice note URL
+      voiceNoteUrl: downloadUrl || null, // Save voice note URL
     });
 
     // Delete removed images from storage
@@ -134,8 +154,7 @@ export const deleteNote = async (note: Note, userId: string) => {
 
     // Delete the note's voice note file from Firebase Storage if it exists
     if (note.voiceNoteUrl) {
-      // Assuming `deleteAudioFile` is implemented in storageService
-      await deleteAudioFile(note.voiceNoteUrl);
+      await deleteVoiceNote(note.voiceNoteUrl);
     }
 
     // Delete the note from Firebase

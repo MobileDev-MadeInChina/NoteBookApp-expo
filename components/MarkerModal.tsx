@@ -16,7 +16,12 @@ import {
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
 import { useAuth } from "@/app/AuthContext";
-import { startRecording, stopRecording, playAudio } from "@/services/audioService";
+import {
+  startRecording,
+  stopRecording,
+  playAudio,
+} from "@/services/audioService";
+import { uploadVoiceNote } from "@/services/storageService";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
@@ -202,13 +207,14 @@ export function MarkerModal({
               {recording ? "Stop Recording" : "Record Voice Note"}
             </Text>
           </Pressable>
+
           {/* Play Voice Note Button */}
           {note.voiceNoteUrl && (
             <Pressable
               onPress={handlePlayAudio}
               className="bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2">
               <Text className="text-white text-center font-semibold">
-                Play Voice Note
+                Play Voice Note: {note.voiceNoteUrl}
               </Text>
             </Pressable>
           )}
