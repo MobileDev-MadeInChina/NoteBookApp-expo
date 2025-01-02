@@ -214,7 +214,7 @@ export function MarkerModal({
               onPress={handlePlayAudio}
               className="bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2">
               <Text className="text-white text-center font-semibold">
-                Play Voice Note: {note.voiceNoteUrl}
+                Play Voice Note: {note.voiceNoteUrl?.slice(0, 20)}...
               </Text>
             </Pressable>
           )}
