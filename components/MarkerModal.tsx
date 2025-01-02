@@ -143,6 +143,7 @@ export function MarkerModal({
         await deleteVoiceNote(note.voiceNoteUrl);
       }
       setNote((prev) => ({ ...prev, voiceNoteUrl: uri }));
+      await handleUpdateNote();
     }
     setRecording(false);
   };
