@@ -120,7 +120,6 @@ export function MarkerModal({
       console.log("Error updating note:", error);
       Alert.alert("Error", "Failed to update note", [{ text: "Okay" }]);
     }
-    setShowModal(false);
     setMarker(null); // Reset modal state
     setIsSaving(false);
   }
