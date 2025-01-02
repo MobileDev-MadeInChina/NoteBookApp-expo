@@ -117,6 +117,7 @@ export async function updateNote(
 // delete note from Firebase
 export const deleteNote = async (note: Note, userId: string) => {
   try {
+    // Delete images from storage before deleting note from Firebase
     const promises = note.imageUrls.map(async (imageUrl) => {
       await deleteImage(imageUrl);
     });
