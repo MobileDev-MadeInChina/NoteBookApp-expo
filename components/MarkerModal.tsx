@@ -21,7 +21,7 @@ import {
   stopRecording,
   playAudio,
 } from "@/services/audioService";
-import { uploadVoiceNote } from "@/services/storageService";
+import { deleteVoiceNote, uploadVoiceNote } from "@/services/storageService";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
@@ -135,6 +135,13 @@ export function MarkerModal({
   const handleStopRecording = async () => {
     const uri = await stopRecording();
     if (uri) {
+      if (
+        note.voiceNoteUrl &&
+        note.voiceNoteUrl.includes("https://firebasestorage")
+      ) {
+        // Delete old voice note from Firebase Storage
+        await deleteVoiceNote(note.voiceNoteUrl);
+      }
       setNote((prev) => ({ ...prev, voiceNoteUrl: uri }));
     }
     setRecording(false);
