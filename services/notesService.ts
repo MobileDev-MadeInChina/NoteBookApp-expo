@@ -19,11 +19,13 @@ export async function selectNoteById(id: string, userId: string) {
       console.log("No note found");
       return;
     }
+
     const note: Note = {
       id: noteDoc.id,
       text: noteDoc.get("text"),
       imageUrls: noteDoc.get("imageUrls"),
       mark: noteDoc.get("mark"),
+      voiceNoteUrl: noteDoc.get("voiceNoteUrl") || null, // Fetch voice note URL
     };
 
     return note;
@@ -41,11 +43,13 @@ export async function selectNoteByMarkerKey(key: string, userId: string) {
       console.log("No note found");
       return;
     }
+
     const note: Note = {
       id: noteDoc.id,
       text: noteDoc.get("text"),
       imageUrls: noteDoc.get("imageUrls"),
       mark: noteDoc.get("mark"),
+      voiceNoteUrl: noteDoc.get("voiceNoteUrl") || null, // Fetch voice note URL
     };
 
     return note;
@@ -57,16 +61,18 @@ export async function selectNoteByMarkerKey(key: string, userId: string) {
 // add note to Firebase
 export async function addNote(note: Note, userId: string) {
   try {
-    // upload images to Firebase Storage and get URLs
+    // Upload images to Firebase Storage and get URLs
     const promises = note.imageUrls.map(async (imageUrl) => {
       return await uploadImage(imageUrl);
     });
     const urls = await Promise.all(promises);
-    // add note to Firebase
+
+    // Add note to Firebase, including the voiceNoteUrl if available
     await addDoc(collection(database, userId), {
       text: note.text,
       imageUrls: urls,
       mark: note.mark,
+      voiceNoteUrl: note.voiceNoteUrl || null, // Save voice note URL
     });
   } catch (error) {
     console.error("Error adding note:", error);
@@ -81,30 +87,33 @@ export async function updateNote(
   userId: string
 ) {
   try {
-    // initialize imageUrls array
+    // Initialize imageUrls array
     let imageUrls: string[] = [];
-    // iterate through the imageUrls array and upload or add the image URLs to the note
+
+    // Iterate through the imageUrls array and upload or add the image URLs to the note
     if (note.imageUrls && note.imageUrls.length > 0) {
       for (let i = 0; i < note.imageUrls.length; i++) {
         const imagePath = note.imageUrls[i];
         if (imagePath.includes("https://firebasestorage")) {
-          // if the imagePath is a Firebase Storage URL, then it is already saved in Firebase Storage
+          // If the imagePath is a Firebase Storage URL, then it is already saved in Firebase Storage
           imageUrls.push(imagePath);
         } else {
-          // if not a Firebase Storage URL, upload it to Firebase Storage and get the URL
+          // If not a Firebase Storage URL, upload it to Firebase Storage and get the URL
           const imageUrl = await uploadImage(imagePath);
           imageUrls.push(imageUrl);
         }
       }
     }
 
-    // update the note in Firebase
+    // Update the note in Firebase, including the voiceNoteUrl
     await updateDoc(doc(collection(database, userId), note.id), {
       text: note.text,
       imageUrls,
+      mark: note.mark,
+      voiceNoteUrl: note.voiceNoteUrl || null, // Save voice note URL
     });
 
-    // delete removed images from storage
+    // Delete removed images from storage
     const promises = deletedImageUrls.map(async (imageUrl) => {
       await deleteImage(imageUrl);
     });
@@ -123,6 +132,13 @@ export const deleteNote = async (note: Note, userId: string) => {
     });
     await Promise.all(promises);
 
+    // Delete the note's voice note file from Firebase Storage if it exists
+    if (note.voiceNoteUrl) {
+      // Assuming `deleteAudioFile` is implemented in storageService
+      await deleteAudioFile(note.voiceNoteUrl);
+    }
+
+    // Delete the note from Firebase
     await deleteDoc(doc(collection(database, userId), note.id));
   } catch (error) {
     console.log("Error deleting note:", error);

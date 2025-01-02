@@ -16,6 +16,7 @@ import {
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
 import { useAuth } from "@/app/AuthContext";
+import { startRecording, stopRecording, playAudio } from "@/services/audioService";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
@@ -30,32 +31,35 @@ export function MarkerModal({
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const { user } = useAuth();
-  // State for deleted image urls
+
+  // State to manage deleted image URLs
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  // State for displaying the note
+  const [isLoading, setIsLoading] = useState(false); // Loading state for fetching notes
+  const [isSaving, setIsSaving] = useState(false); // Saving state for adding/updating notes
+  const [recording, setRecording] = useState(false); // Recording state for voice notes
+
+  // Initialize note state with default values
   const [note, setNote] = useState<Note>({
     id: "",
     text: "",
     imageUrls: [],
     mark: marker,
+    voiceNoteUrl: undefined, // Add voiceNoteUrl to store audio file URI
   });
 
-  // UseEffect to fetch note from Firebase when marker changes
+  // Fetch note from Firebase when marker changes
   useEffect(() => {
     setIsLoading(true);
 
-    // fetch note from Firebase
     async function fetchNote() {
       try {
         if (!user) {
           console.log("No user found");
           return;
         }
-        const note = await selectNoteByMarkerKey(marker.key, user.uid);
-        if (note) {
-          setNote(note);
+        const fetchedNote = await selectNoteByMarkerKey(marker.key, user.uid);
+        if (fetchedNote) {
+          setNote(fetchedNote); // Set note data if available
         }
       } catch (error) {
         console.log("Error loading note:", error);
@@ -63,10 +67,11 @@ export function MarkerModal({
       }
       setIsLoading(false);
     }
+
     fetchNote();
   }, [marker.key, user]);
 
-  // launch image picker
+  // Handle image picker functionality
   async function handleImagePicker() {
     const imagePath = await launchImagePicker();
     if (imagePath) {
@@ -77,27 +82,7 @@ export function MarkerModal({
     }
   }
 
-  // update note in Firebase
-  async function handleUpdateNote() {
-    setIsSaving(true);
-    try {
-      if (!user) {
-        console.log("No user found");
-        return;
-      }
-      await updateNote(note, deletedImageUrls, user.uid);
-      Alert.alert("Success", "Note saved successfully", [{ text: "OK" }]);
-    } catch (error) {
-      console.log("Error updating note:", error);
-      Alert.alert("Error", "Failed to update note", [{ text: "Okay" }]);
-    }
-    // reset the marker and isSaving states
-    setShowModal(false);
-    setMarker(null);
-    setIsSaving(false);
-  }
-
-  // add note to Firebase
+  // Add a new note to Firebase
   async function handleAddNote() {
     setIsSaving(true);
     try {
@@ -105,16 +90,58 @@ export function MarkerModal({
         console.log("No user found");
         return;
       }
-      await addNote(note, user.uid);
+      await addNote(note, user.uid); // Add note to Firebase
       Alert.alert("Success", "Note added successfully", [{ text: "OK" }]);
-    } catch (error: any) {
+    } catch (error) {
       console.log("Error adding note:", error);
       Alert.alert("Error", "Failed to add note", [{ text: "Okay" }]);
     }
     setIsSaving(false);
     setShowModal(false);
-    setMarker(null);
+    setMarker(null); // Reset modal state
   }
+
+  // Update an existing note in Firebase
+  async function handleUpdateNote() {
+    setIsSaving(true);
+    try {
+      if (!user) {
+        console.log("No user found");
+        return;
+      }
+      await updateNote(note, deletedImageUrls, user.uid); // Update note in Firebase
+      Alert.alert("Success", "Note updated successfully", [{ text: "OK" }]);
+    } catch (error) {
+      console.log("Error updating note:", error);
+      Alert.alert("Error", "Failed to update note", [{ text: "Okay" }]);
+    }
+    setShowModal(false);
+    setMarker(null); // Reset modal state
+    setIsSaving(false);
+  }
+
+  // Handle start of audio recording
+  const handleStartRecording = async () => {
+    await startRecording();
+    setRecording(true);
+  };
+
+  // Handle stop of audio recording and save the URI
+  const handleStopRecording = async () => {
+    const uri = await stopRecording();
+    if (uri) {
+      setNote((prev) => ({ ...prev, voiceNoteUrl: uri }));
+    }
+    setRecording(false);
+  };
+
+  // Play the recorded audio note
+  const handlePlayAudio = async () => {
+    if (note.voiceNoteUrl) {
+      await playAudio(note.voiceNoteUrl);
+    }
+  };
+
   return (
     <Modal animationType="slide" transparent={true} visible={showModal}>
       <View className="flex-1 mt-24 mx-5 bg-white rounded-xl p-6 shadow-lg">
@@ -128,7 +155,7 @@ export function MarkerModal({
         )}
         <TextInput
           placeholder="Enter a note"
-          value={note.text}
+          value={note.text ?? ""}
           onChangeText={(text) => setNote((prev) => ({ ...prev, text }))}
           className="border border-gray-300 rounded-lg p-3 mb-4"
         />
@@ -139,7 +166,7 @@ export function MarkerModal({
             Select Image
           </Text>
         </Pressable>
-        {note.imageUrls.length > 0 ? (
+        {note.imageUrls.length > 0 && (
           <View className="mb-4">
             {note.imageUrls.map((imagePath, index) => (
               <View key={index} className="flex-row items-center mb-3">
@@ -165,12 +192,28 @@ export function MarkerModal({
               </View>
             ))}
           </View>
-        ) : (
-          <Text className="text-center text-gray-500 mb-4">
-            No images found
-          </Text>
         )}
         <View className="flex-row justify-between">
+          {/* Voice Note Recording Button */}
+          <Pressable
+            onPress={recording ? handleStopRecording : handleStartRecording}
+            className="bg-orange-500 py-2 px-4 rounded-lg flex-1 mr-2">
+            <Text className="text-white text-center font-semibold">
+              {recording ? "Stop Recording" : "Record Voice Note"}
+            </Text>
+          </Pressable>
+          {/* Play Voice Note Button */}
+          {note.voiceNoteUrl && (
+            <Pressable
+              onPress={handlePlayAudio}
+              className="bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2">
+              <Text className="text-white text-center font-semibold">
+                Play Voice Note
+              </Text>
+            </Pressable>
+          )}
+        </View>
+        <View className="flex-row justify-between mt-4">
           <Pressable
             className="bg-gray-500 py-2 px-4 rounded-lg flex-1 mr-2"
             onPress={() => {
