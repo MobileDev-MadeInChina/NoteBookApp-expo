@@ -1,5 +1,5 @@
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -39,17 +39,22 @@ export default function NoteScreen() {
   // State for the sound object
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isTainted, setIsTainted] = useState(false);
+  // Using a ref to store the original note
+  const originalNote = useRef<Note | null>(null);
 
-  // launch image picker
-  async function handleImagePicker() {
-    const imagePath = await launchImagePicker();
-    if (imagePath) {
-      setNote((note) => ({
-        ...note,
-        imageUrls: [...note.imageUrls, imagePath],
-      }));
-    }
-  }
+  // Set isTainted state to true if the any note field is changed
+  useEffect(() => {
+    if (!originalNote.current) return;
+
+    const hasChanged =
+      note.text !== originalNote.current.text ||
+      note.voiceNoteUrl !== originalNote.current.voiceNoteUrl ||
+      JSON.stringify(note.imageUrls) !==
+        JSON.stringify(originalNote.current.imageUrls);
+
+    setIsTainted(hasChanged);
+  }, [note]);
 
   // fetch note on mount
   useEffect(() => {
@@ -61,9 +66,11 @@ export default function NoteScreen() {
           console.log("No user found");
           return;
         }
-        const note = await selectNoteById(params.id as string, user.uid);
-        if (note) {
-          setNote(note);
+        const fetchedNote = await selectNoteById(params.id as string, user.uid);
+        if (fetchedNote) {
+          setNote(fetchedNote);
+          originalNote.current = fetchedNote; // Store original note
+          setIsTainted(false);
         }
       } catch (error) {
         console.log("Error loading note:", error);
@@ -73,6 +80,17 @@ export default function NoteScreen() {
     }
     fetchNote();
   }, [params.id, user]);
+
+  // launch image picker
+  async function handleImagePicker() {
+    const imagePath = await launchImagePicker();
+    if (imagePath) {
+      setNote((note) => ({
+        ...note,
+        imageUrls: [...note.imageUrls, imagePath],
+      }));
+    }
+  }
 
   // update note in Firebase
   async function handleUpdateNote() {
@@ -210,7 +228,16 @@ export default function NoteScreen() {
           )}
         </View>
 
-        <Button title="Save" onPress={handleUpdateNote} />
+        {isTainted &&
+          (isSaving ? (
+            <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">
+              <Text className="text-white text-center font-semibold">
+                Saving...
+              </Text>
+            </View>
+          ) : (
+            <Button title="Save" onPress={handleUpdateNote} />
+          ))}
 
         {note.mark && (
           <Link

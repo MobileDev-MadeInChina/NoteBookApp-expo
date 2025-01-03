@@ -22,7 +22,6 @@ import {
   startRecording,
 } from "@/services/audioService";
 import { Audio } from "expo-av";
-import { deleteVoiceNote, uploadVoiceNote } from "@/services/storageService";
 
 // Modal to display the marker details and get user input
 export function MarkerModal({
