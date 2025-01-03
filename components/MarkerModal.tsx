@@ -199,9 +199,6 @@ export function MarkerModal({
         console.log("Playback status:", playbackStatus);
       } catch (error) {
         console.error("Error playing audio:", error);
-        if (error instanceof Error) {
-          console.error("Error details:", error.message);
-        }
       }
     } else {
       Alert.alert("Error", "No voice note recorded");
