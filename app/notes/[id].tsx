@@ -200,58 +200,83 @@ export default function NoteScreen() {
           )}
         </View>
 
-        <View className="mt-6 space-y-4 border">
-          <Button title="Select Image" onPress={handleImagePicker} />
-        </View>
-        <View className="flex-row justify-between">
-          {/* Voice Note Recording Button */}
-          <Pressable
-            onPress={recording ? handleStopRecording : handleStartRecording}
-            className="bg-orange-500 py-2 px-4 rounded-lg flex-1 mr-2">
-            <Text className="text-white text-center font-semibold">
-              {recording ? "Stop Recording" : "Record Voice Note"}
-            </Text>
-          </Pressable>
-
-          {/* Play Voice Note Button */}
-          {note.voiceNoteUrl && (
+        <View className="mt-6 space-y-4">
+          {/* Image and Recording Controls */}
+          <View className="space-y-3">
+            {/* Image Button */}
             <Pressable
-              onPress={handlePlayAudio}
-              disabled={isPlaying}
-              className={`bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2 ${
-                isPlaying ? "opacity-75" : ""
-              }`}>
+              onPress={handleImagePicker}
+              className="bg-blue-500 py-3 px-4 rounded-lg shadow-sm active:bg-blue-600">
               <Text className="text-white text-center font-semibold">
-                {isPlaying ? "Playing..." : "Play Voice Note"}
+                Add Image
               </Text>
             </Pressable>
-          )}
-        </View>
 
-        {isTainted &&
-          (isSaving ? (
-            <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">
-              <Text className="text-white text-center font-semibold">
-                Saving...
-              </Text>
+            {/* Voice Controls */}
+            <View className="flex-row space-x-3">
+              <Pressable
+                onPress={recording ? handleStopRecording : handleStartRecording}
+                className={`flex-1 py-3 px-4 rounded-lg shadow-sm ${
+                  recording
+                    ? "bg-red-500 active:bg-red-600"
+                    : "bg-orange-500 active:bg-orange-600"
+                }`}>
+                <Text className="text-white text-center font-semibold">
+                  {recording ? "Stop Recording" : "Record Voice"}
+                </Text>
+              </Pressable>
+
+              {note.voiceNoteUrl && (
+                <Pressable
+                  onPress={handlePlayAudio}
+                  disabled={isPlaying}
+                  className={`flex-1 py-3 px-4 rounded-lg shadow-sm ${
+                    isPlaying
+                      ? "bg-purple-400"
+                      : "bg-purple-500 active:bg-purple-600"
+                  }`}>
+                  <Text className="text-white text-center font-semibold">
+                    {isPlaying ? "Playing..." : "Play Voice"}
+                  </Text>
+                </Pressable>
+              )}
             </View>
-          ) : (
-            <Button title="Save" onPress={handleUpdateNote} />
-          ))}
+          </View>
 
-        {note.mark && (
-          <Link
-            className="mt-9 bg-blue-500 rounded-full p-3 shadow-md mx-auto border"
-            href={{
-              pathname: "/map",
-              params: {
-                latitude: note.mark.coordinate.latitude,
-                longitude: note.mark.coordinate.longitude,
-              },
-            }}>
-            View in Map
-          </Link>
-        )}
+          {/* Action Buttons */}
+          <View className="mt-4">
+            {isTainted && (
+              <Pressable
+                disabled={isSaving}
+                onPress={handleUpdateNote}
+                className={`py-3 px-4 rounded-lg shadow-sm ${
+                  isSaving ? "bg-green-400" : "bg-green-500 active:bg-green-600"
+                }`}>
+                <Text className="text-white text-center font-semibold">
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Text>
+              </Pressable>
+            )}
+
+            {note.mark && (
+              <Link
+                href={{
+                  pathname: "/map",
+                  params: {
+                    latitude: note.mark.coordinate.latitude,
+                    longitude: note.mark.coordinate.longitude,
+                  },
+                }}
+                className="mt-4 block">
+                <View className="bg-blue-500 py-3 px-4 rounded-lg shadow-sm active:bg-blue-600">
+                  <Text className="text-white text-center font-semibold">
+                    View in Map
+                  </Text>
+                </View>
+              </Link>
+            )}
+          </View>
+        </View>
       </View>
     </View>
   );
