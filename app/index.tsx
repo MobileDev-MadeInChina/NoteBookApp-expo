@@ -41,6 +41,7 @@ export default function HomeScreen() {
     text: doc.data().text,
     imageUrls: doc.data().imageUrls,
     mark: doc.data().mark,
+    voiceNoteUrl: doc.data().voiceNoteUrl,
   }));
 
   // delete note from Firebase
