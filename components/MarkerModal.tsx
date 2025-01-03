@@ -155,13 +155,7 @@ export function MarkerModal({
   // Handle stop of audio recording and save the URI
   const handleStopRecording = async () => {
     try {
-      await handleVoiceNoteRecording(
-        note,
-        setNote,
-        setRecording,
-        deleteVoiceNote,
-        uploadVoiceNote
-      );
+      await handleVoiceNoteRecording(note, setNote, setRecording);
     } catch (error) {
       console.error("Error handling recording:", error);
       Alert.alert("Error", "Failed to save recording");

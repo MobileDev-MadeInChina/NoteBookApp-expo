@@ -1,4 +1,5 @@
 import { Audio } from "expo-av";
+import { deleteVoiceNote, uploadVoiceNote } from "./storageService";
 
 let recording: Audio.Recording | null = null;
 
@@ -42,9 +43,7 @@ export const stopRecording = async (): Promise<string | null> => {
 export const handleVoiceNoteRecording = async (
   note: { voiceNoteUrl: string },
   setNote: (note: any) => void,
-  setRecording: (recording: boolean) => void,
-  deleteVoiceNote: (url: string) => Promise<void>,
-  uploadVoiceNote: (uri: string) => Promise<string>
+  setRecording: (recording: boolean) => void
 ) => {
   try {
     const uri = await stopRecording();
