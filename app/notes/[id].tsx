@@ -1,14 +1,6 @@
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  Alert,
-  Button,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-  Image,
-} from "react-native";
+import { Alert, Pressable, Text, TextInput, View, Image } from "react-native";
 import { Note } from "@/types";
 import { launchImagePicker } from "@/services/imagePicker";
 import { selectNoteById, updateNote } from "@/services/notesService";
@@ -260,19 +252,15 @@ export default function NoteScreen() {
 
             {note.mark && (
               <Link
+                className="bg-blue-500 rounded-full px-4 py-2 shadow-md"
                 href={{
                   pathname: "/map",
                   params: {
-                    latitude: note.mark.coordinate.latitude,
-                    longitude: note.mark.coordinate.longitude,
+                    latitude: note.mark?.coordinate.latitude,
+                    longitude: note.mark?.coordinate.longitude,
                   },
-                }}
-                className="mt-4 block">
-                <View className="bg-blue-500 py-3 px-4 rounded-lg shadow-sm active:bg-blue-600">
-                  <Text className="text-white text-center font-semibold">
-                    View in Map
-                  </Text>
-                </View>
+                }}>
+                <Text className="text-white font-semibold">View in Map</Text>
               </Link>
             )}
           </View>
