@@ -38,3 +38,47 @@ export const stopRecording = async (): Promise<string | null> => {
     return null;
   }
 };
+
+export const playAudio = async (
+  voiceNoteUrl: string,
+  setSound: (sound: Audio.Sound | null) => void,
+  setIsPlaying: (isPlaying: boolean) => void
+) => {
+  try {
+    // Configure audio mode
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    });
+
+    // Clean the URL if it's encoded multiple times
+    const cleanUri = decodeURIComponent(voiceNoteUrl);
+    console.log("Playing audio from cleaned URI:", cleanUri);
+
+    const { sound: newSound } = await Audio.Sound.createAsync(
+      { uri: cleanUri },
+      { shouldPlay: true },
+      (status) => console.log("Loading status:", status)
+    );
+    setSound(newSound);
+
+    // Add status listener for playback completion
+    newSound.setOnPlaybackStatusUpdate((status) => {
+      if ("isLoaded" in status && status.isLoaded) {
+        if (status.didJustFinish) {
+          setIsPlaying(false);
+          newSound.unloadAsync();
+          setSound(null);
+        }
+      }
+    });
+
+    const playbackStatus = await newSound.playAsync();
+    console.log("Playback status:", playbackStatus);
+  } catch (error) {
+    console.error("Error playing audio:", error);
+    throw error;
+  }
+};

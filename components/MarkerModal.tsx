@@ -164,39 +164,7 @@ export function MarkerModal({
         if (sound) {
           await sound.unloadAsync();
         }
-
-        // Configure audio mode
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-
-        // Clean the URL if it's encoded multiple times
-        const cleanUri = decodeURIComponent(note.voiceNoteUrl);
-        console.log("Playing audio from cleaned URI:", cleanUri);
-
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: cleanUri },
-          { shouldPlay: true },
-          (status) => console.log("Loading status:", status)
-        );
-        setSound(newSound);
-
-        // Add status listener for playback completion
-        newSound.setOnPlaybackStatusUpdate((status) => {
-          if ("isLoaded" in status && status.isLoaded) {
-            if (status.didJustFinish) {
-              setIsPlaying(false);
-              newSound.unloadAsync();
-              setSound(null);
-            }
-          }
-        });
-
-        const playbackStatus = await newSound.playAsync();
-        console.log("Playback status:", playbackStatus);
+        await playAudio(note.voiceNoteUrl, setSound, setIsPlaying);
       } catch (error) {
         console.error("Error playing audio:", error);
       }
