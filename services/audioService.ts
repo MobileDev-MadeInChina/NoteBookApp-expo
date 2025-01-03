@@ -30,19 +30,11 @@ export const stopRecording = async (): Promise<string | null> => {
 
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
+    console.log("Recording URI after stop:", uri);
     recording = null; // Reset recording object
     return uri || null;
   } catch (error) {
     console.error("Failed to stop recording:", error);
     return null;
-  }
-};
-
-export const playAudio = async (uri: string) => {
-  try {
-    const { sound } = await Audio.Sound.createAsync({ uri });
-    await sound.playAsync();
-  } catch (error) {
-    console.error("Failed to play audio:", error);
   }
 };

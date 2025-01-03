@@ -16,11 +16,8 @@ import {
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
 import { useAuth } from "@/app/AuthContext";
-import {
-  startRecording,
-  stopRecording,
-  playAudio,
-} from "@/services/audioService";
+import { startRecording, stopRecording } from "@/services/audioService";
+import { Audio } from "expo-av";
 import { deleteVoiceNote, uploadVoiceNote } from "@/services/storageService";
 
 // Modal to display the marker details and get user input
@@ -42,6 +39,8 @@ export function MarkerModal({
   const [isLoading, setIsLoading] = useState(false); // Loading state for fetching notes
   const [isSaving, setIsSaving] = useState(false); // Saving state for adding/updating notes
   const [recording, setRecording] = useState(false); // Recording state for voice notes
+  // State for the sound object
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   // Initialize note state with default values
   const [note, setNote] = useState<Note>({
@@ -49,7 +48,7 @@ export function MarkerModal({
     text: "",
     imageUrls: [],
     mark: marker,
-    voiceNoteUrl: undefined, // Add voiceNoteUrl to store audio file URI
+    voiceNoteUrl: "",
   });
 
   // Fetch note from Firebase when marker changes
@@ -132,17 +131,26 @@ export function MarkerModal({
 
   // Handle stop of audio recording and save the URI
   const handleStopRecording = async () => {
-    const uri = await stopRecording();
-    if (uri) {
-      if (
-        note.voiceNoteUrl &&
-        note.voiceNoteUrl.includes("https://firebasestorage")
-      ) {
-        // Delete old voice note from Firebase Storage
-        await deleteVoiceNote(note.voiceNoteUrl);
+    try {
+      const uri = await stopRecording();
+      if (uri) {
+        console.log("New recording URI:", uri);
+        // Upload the new recording to Firebase Storage
+        // We uses CRUD already here to be able to delete the old recording if needed
+        const uploadedUrl = await uploadVoiceNote(uri);
+        console.log("Uploaded URL:", uploadedUrl);
+
+        // Only delete the old recording if it exists and is different
+        if (note.voiceNoteUrl && note.voiceNoteUrl !== uploadedUrl) {
+          await deleteVoiceNote(note.voiceNoteUrl);
+        }
+
+        // Update the note with the new URL
+        setNote((prev) => ({ ...prev, voiceNoteUrl: uploadedUrl }));
       }
-      setNote((prev) => ({ ...prev, voiceNoteUrl: uri }));
-      await handleUpdateNote();
+    } catch (error) {
+      console.error("Error handling recording:", error);
+      Alert.alert("Error", "Failed to save recording");
     }
     setRecording(false);
   };
@@ -150,9 +158,39 @@ export function MarkerModal({
   // Play the recorded audio note
   const handlePlayAudio = async () => {
     if (note.voiceNoteUrl) {
-      await playAudio(note.voiceNoteUrl);
+      // Clean the URL if it's encoded multiple times
+      const cleanUri = decodeURIComponent(note.voiceNoteUrl);
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: cleanUri },
+          { shouldPlay: true },
+          (status) => console.log("Loading status:", status)
+        );
+        setSound(sound);
+        const playbackStatus = await sound.playAsync();
+        console.log("Playback status:", playbackStatus);
+      } catch (error) {
+        console.error("Error playing audio:", error);
+        if (error instanceof Error) {
+          console.error("Error details:", error.message);
+        }
+      }
+    } else {
+      Alert.alert("Error", "No voice note recorded");
+      setRecording(false);
     }
   };
+
+  // Unload the sound object when finished playing
+  useEffect(() => {
+    if (sound) {
+      const unload = async () => {
+        await sound.unloadAsync();
+        setSound(null);
+      };
+      unload();
+    }
+  }, [sound]);
 
   return (
     <Modal animationType="slide" transparent={true} visible={showModal}>
@@ -233,7 +271,7 @@ export function MarkerModal({
               setMarker(null);
               setShowModal(false);
             }}>
-            <Text className="text-white text-center font-semibold">Cancel</Text>
+            <Text className="text-white text-center font-semibold">Close</Text>
           </Pressable>
           {isSaving ? (
             <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">

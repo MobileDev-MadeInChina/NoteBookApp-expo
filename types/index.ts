@@ -6,12 +6,12 @@ export type Note = {
   text: string;
   imageUrls: string[];
   mark: NoteMarker | null;
-  voiceNoteUrl?: string; // Add optional field for voice note URL
+  voiceNoteUrl: string;
 };
 
 export type NoteMarker = {
   coordinate: LatLng;
   key: string;
   title: string;
-  voiceNoteUrl?: string;
+  voiceNoteUrl: string;
 };

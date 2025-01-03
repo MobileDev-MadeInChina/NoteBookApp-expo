@@ -30,21 +30,62 @@ export async function deleteImage(imageUrl: string) {
 
 // Upload voice note
 export async function uploadVoiceNote(voiceNotePath: string): Promise<string> {
-  const res = await fetch(voiceNotePath);
-  const blob = await res.blob();
-  const storageRef = ref(storage, `voiceNotes/${Date.now()}.mp3`);
-  await uploadBytes(storageRef, blob).then((snapshot) => {
-    console.log("Uploaded a blob or file!", snapshot);
-  });
+  try {
+    console.log("Input voice note path:", voiceNotePath);
 
-  return getDownloadURL(storageRef);
+    // Only proceed with fetch if it's a local file
+    if (!voiceNotePath.startsWith("http")) {
+      const response = await fetch(voiceNotePath);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch voice note: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log("Blob size:", blob.size);
+
+      // Extract the original file extension from the path
+      const extension = "m4a";
+      const fileName = `voiceNotes/${Date.now()}.${extension}`;
+
+      const storageRef = ref(storage, fileName);
+      const metadata = {
+        contentType: `audio/${extension}`, // Set proper content type
+      };
+      const snapshot = await uploadBytes(storageRef, blob, metadata);
+      console.log("Uploaded voice note:", snapshot);
+
+         // Wait for the download URL and make sure it resolves
+         const downloadUrl = await getDownloadURL(storageRef);
+         console.log("Download URL:", downloadUrl);
+         
+         if (!downloadUrl) {
+           throw new Error("Failed to get download URL");
+         }
+      return downloadUrl;
+    } else {
+      console.log("File is already uploaded, returning existing URL");
+      return voiceNotePath;
+    }
+  } catch (error) {
+    console.error("Error uploading voice note:", error);
+    throw error;
+  }
 }
 
 // Delete voice note from Firebase Storage
 export async function deleteVoiceNote(voiceNoteUrl: string) {
   try {
-    await deleteObject(ref(getStorage(), voiceNoteUrl));
-    console.log("Deleted voice note:", voiceNoteUrl);
+    // Extract the actual path from the URL
+    const decodedUrl = decodeURIComponent(voiceNoteUrl);
+    const urlObj = new URL(decodedUrl);
+    const pathWithToken = urlObj.pathname.split("/o/")[1];
+    const path = pathWithToken.split("?")[0];
+
+    console.log("Attempting to delete file at path:", path);
+
+    const storageRef = ref(storage, decodeURIComponent(path));
+    await deleteObject(storageRef);
+    console.log("Successfully deleted voice note at path:", path);
   } catch (error) {
     console.log("Error deleting voice note:", error);
   }

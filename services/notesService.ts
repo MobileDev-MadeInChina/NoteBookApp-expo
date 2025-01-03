@@ -72,18 +72,12 @@ export async function addNote(note: Note, userId: string) {
     });
     const urls = await Promise.all(promises);
 
-    // Upload voice note to Firebase Storage and get URL
-    let downloadUrl: string | null = null;
-    if (note.voiceNoteUrl) {
-      downloadUrl = await uploadVoiceNote(note.voiceNoteUrl);
-    }
-
     // Add note to Firebase, including the voiceNoteUrl if available
     await addDoc(collection(database, userId), {
       text: note.text,
       imageUrls: urls,
       mark: note.mark,
-      voiceNoteUrl: downloadUrl || null, // Save voice note URL
+      voiceNoteUrl: note.voiceNoteUrl,
     });
   } catch (error) {
     console.error("Error adding note:", error);
@@ -116,21 +110,12 @@ export async function updateNote(
       }
     }
 
-    // Upload voice note to Firebase Storage and get URL
-    let downloadUrl: string | null = null;
-    if (note.voiceNoteUrl) {
-      // delete old voice note from Firebase Storage
-      await deleteVoiceNote(note.voiceNoteUrl);
-      // upload voice note to Firebase Storage
-      downloadUrl = await uploadVoiceNote(note.voiceNoteUrl);
-    }
-
     // Update the note in Firebase, including the voiceNoteUrl
     await updateDoc(doc(collection(database, userId), note.id), {
       text: note.text,
       imageUrls,
       mark: note.mark,
-      voiceNoteUrl: downloadUrl || null, // Save voice note URL
+      voiceNoteUrl: note.voiceNoteUrl,
     });
 
     // Delete removed images from storage
