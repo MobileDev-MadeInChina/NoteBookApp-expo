@@ -12,7 +12,6 @@ import {
   deleteImage,
   deleteVoiceNote,
   uploadImage,
-  uploadVoiceNote,
 } from "./storageService";
 
 // fetch note from Firebase by id
