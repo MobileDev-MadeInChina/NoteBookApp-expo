@@ -8,7 +8,7 @@ import { database } from "../firebase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import * as Location from "expo-location";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 export default function MapScreen() {
   const { user } = useAuth();

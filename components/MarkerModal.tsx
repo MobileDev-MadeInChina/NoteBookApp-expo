@@ -15,7 +15,7 @@ import {
   updateNote,
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import {
   handleVoiceNoteRecording,
   playAudio,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Text, View, TextInput, TouchableOpacity } from "react-native";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../hooks/useAuth";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");

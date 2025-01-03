@@ -4,7 +4,7 @@ import { Alert, Pressable, Text, TextInput, View, Image } from "react-native";
 import { Note } from "@/types";
 import { launchImagePicker } from "@/services/imagePicker";
 import { selectNoteById, updateNote } from "@/services/notesService";
-import { useAuth } from "../AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 import { Audio } from "expo-av";
 import {
   handleVoiceNoteRecording,

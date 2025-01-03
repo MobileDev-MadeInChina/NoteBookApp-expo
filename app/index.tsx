@@ -7,7 +7,7 @@ import { collection } from "firebase/firestore";
 import { Note } from "@/types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteNote } from "@/services/notesService";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import LogoutButton from "@/components/LogOutButton";
 import { HelloWave } from "@/components/HelloWave";
 

@@ -8,7 +8,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { AuthProvider } from "./AuthContext";
+import { AuthProvider } from "../hooks/useAuth";
 import "../global.css";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.

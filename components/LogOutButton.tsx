@@ -1,4 +1,4 @@
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "expo-router";
 import { Alert, Text, TouchableOpacity } from "react-native";
 
