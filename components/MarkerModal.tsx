@@ -41,6 +41,7 @@ export function MarkerModal({
   const [recording, setRecording] = useState(false); // Recording state for voice notes
   // State for the sound object
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Initialize note state with default values
   const [note, setNote] = useState<Note>({
@@ -158,16 +159,43 @@ export function MarkerModal({
   // Play the recorded audio note
   const handlePlayAudio = async () => {
     if (note.voiceNoteUrl) {
-      // Clean the URL if it's encoded multiple times
-      const cleanUri = decodeURIComponent(note.voiceNoteUrl);
       try {
-        const { sound } = await Audio.Sound.createAsync(
+        // Unload previous sound if exists
+        if (sound) {
+          await sound.unloadAsync();
+        }
+
+        // Configure audio mode
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+
+        // Clean the URL if it's encoded multiple times
+        const cleanUri = decodeURIComponent(note.voiceNoteUrl);
+        console.log("Playing audio from cleaned URI:", cleanUri);
+
+        const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: cleanUri },
           { shouldPlay: true },
           (status) => console.log("Loading status:", status)
         );
-        setSound(sound);
-        const playbackStatus = await sound.playAsync();
+        setSound(newSound);
+
+        // Add status listener for playback completion
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if ("isLoaded" in status && status.isLoaded) {
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+              newSound.unloadAsync();
+              setSound(null);
+            }
+          }
+        });
+
+        const playbackStatus = await newSound.playAsync();
         console.log("Playback status:", playbackStatus);
       } catch (error) {
         console.error("Error playing audio:", error);
@@ -181,15 +209,13 @@ export function MarkerModal({
     }
   };
 
-  // Unload the sound object when finished playing
+  // Cleanup sound when component unmounts
   useEffect(() => {
-    if (sound) {
-      const unload = async () => {
-        await sound.unloadAsync();
-        setSound(null);
-      };
-      unload();
-    }
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
   }, [sound]);
 
   return (
@@ -257,9 +283,12 @@ export function MarkerModal({
           {note.voiceNoteUrl && (
             <Pressable
               onPress={handlePlayAudio}
-              className="bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2">
+              disabled={isPlaying}
+              className={`bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2 ${
+                isPlaying ? "opacity-75" : ""
+              }`}>
               <Text className="text-white text-center font-semibold">
-                Play Voice Note: {note.voiceNoteUrl?.slice(0, 20)}...
+                {isPlaying ? "Playing..." : "Play Voice Note"}
               </Text>
             </Pressable>
           )}

@@ -44,23 +44,22 @@ export async function uploadVoiceNote(voiceNotePath: string): Promise<string> {
       console.log("Blob size:", blob.size);
 
       // Extract the original file extension from the path
-      const extension = "m4a";
-      const fileName = `voiceNotes/${Date.now()}.${extension}`;
+      const fileName = `voiceNotes/${Date.now()}.m4a`;
 
       const storageRef = ref(storage, fileName);
       const metadata = {
-        contentType: `audio/${extension}`, // Set proper content type
+        contentType: `audio/x-m4a`, // Set proper content type
       };
       const snapshot = await uploadBytes(storageRef, blob, metadata);
       console.log("Uploaded voice note:", snapshot);
 
-         // Wait for the download URL and make sure it resolves
-         const downloadUrl = await getDownloadURL(storageRef);
-         console.log("Download URL:", downloadUrl);
-         
-         if (!downloadUrl) {
-           throw new Error("Failed to get download URL");
-         }
+      // Wait for the download URL and make sure it resolves
+      const downloadUrl = await getDownloadURL(storageRef);
+      console.log("Download URL:", downloadUrl);
+
+      if (!downloadUrl) {
+        throw new Error("Failed to get download URL");
+      }
       return downloadUrl;
     } else {
       console.log("File is already uploaded, returning existing URL");
