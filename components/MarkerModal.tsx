@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Note, NoteMarker } from "@/types";
 import {
   addNote,
@@ -16,7 +16,11 @@ import {
 } from "@/services/notesService";
 import { launchImagePicker } from "@/services/imagePicker";
 import { useAuth } from "@/app/AuthContext";
-import { startRecording, stopRecording } from "@/services/audioService";
+import {
+  playAudio,
+  startRecording,
+  stopRecording,
+} from "@/services/audioService";
 import { Audio } from "expo-av";
 import { deleteVoiceNote, uploadVoiceNote } from "@/services/storageService";
 
@@ -32,8 +36,8 @@ export function MarkerModal({
   showModal: boolean;
   setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  // Get the user from the auth context
   const { user } = useAuth();
-
   // State to manage deleted image URLs
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false); // Loading state for fetching notes
@@ -42,6 +46,9 @@ export function MarkerModal({
   // State for the sound object
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isTainted, setIsTainted] = useState(false);
+  // Using a ref to store the original note
+  const originalNote = useRef<Note | null>(null);
 
   // Initialize note state with default values
   const [note, setNote] = useState<Note>({
@@ -51,6 +58,19 @@ export function MarkerModal({
     mark: marker,
     voiceNoteUrl: "",
   });
+
+  // Set isTainted state to true if the any note field is changed
+  useEffect(() => {
+    if (!originalNote.current) return;
+
+    const hasChanged =
+      note.text !== originalNote.current.text ||
+      note.voiceNoteUrl !== originalNote.current.voiceNoteUrl ||
+      JSON.stringify(note.imageUrls) !==
+        JSON.stringify(originalNote.current.imageUrls);
+
+    setIsTainted(hasChanged);
+  }, [note]);
 
   // Fetch note from Firebase when marker changes
   useEffect(() => {
@@ -65,6 +85,8 @@ export function MarkerModal({
         const fetchedNote = await selectNoteByMarkerKey(marker.key, user.uid);
         if (fetchedNote) {
           setNote(fetchedNote); // Set note data if available
+          originalNote.current = fetchedNote; // Store original note
+          setIsTainted(false);
         }
       } catch (error) {
         console.log("Error loading note:", error);
@@ -160,10 +182,6 @@ export function MarkerModal({
   const handlePlayAudio = async () => {
     if (note.voiceNoteUrl) {
       try {
-        // Unload previous sound if exists
-        if (sound) {
-          await sound.unloadAsync();
-        }
         await playAudio(note.voiceNoteUrl, setSound, setIsPlaying);
       } catch (error) {
         console.error("Error playing audio:", error);
@@ -189,102 +207,108 @@ export function MarkerModal({
         <Text className="text-2xl font-bold mb-4 text-center">
           Marker Details
         </Text>
-        {isLoading && (
+        {isLoading ? (
           <Text className="text-center text-gray-600 mb-4">
             Loading note...
           </Text>
-        )}
-        <TextInput
-          placeholder="Enter a note"
-          value={note.text ?? ""}
-          onChangeText={(text) => setNote((prev) => ({ ...prev, text }))}
-          className="border border-gray-300 rounded-lg p-3 mb-4"
-        />
-        <Pressable
-          onPress={handleImagePicker}
-          className="bg-blue-500 py-2 px-4 rounded-lg mb-4">
-          <Text className="text-white text-center font-semibold">
-            Select Image
-          </Text>
-        </Pressable>
-        {note.imageUrls.length > 0 && (
-          <View className="mb-4">
-            {note.imageUrls.map((imagePath, index) => (
-              <View key={index} className="flex-row items-center mb-3">
-                <Image
-                  source={{ uri: imagePath }}
-                  className="w-24 h-24 rounded-md mr-3"
-                />
-                <Pressable
-                  onPress={() => {
-                    if (imagePath.includes("https://firebasestorage")) {
-                      setDeletedImageUrls((urls) => [...urls, imagePath]);
-                    }
-                    setNote((note) => ({
-                      ...note,
-                      imageUrls: note.imageUrls.filter(
-                        (path) => path !== imagePath
-                      ),
-                    }));
-                  }}
-                  className="bg-red-500 py-2 px-3 rounded-lg">
-                  <Text className="text-white">Remove</Text>
-                </Pressable>
+        ) : (
+          <View>
+            <TextInput
+              placeholder="Enter a note"
+              value={note.text ?? ""}
+              onChangeText={(text) => setNote((prev) => ({ ...prev, text }))}
+              className="border border-gray-300 rounded-lg p-3 mb-4"
+            />
+            <Pressable
+              onPress={handleImagePicker}
+              className="bg-blue-500 py-2 px-4 rounded-lg mb-4">
+              <Text className="text-white text-center font-semibold">
+                Select Image
+              </Text>
+            </Pressable>
+            {note.imageUrls.length > 0 && (
+              <View className="mb-4">
+                {note.imageUrls.map((imagePath, index) => (
+                  <View key={index} className="flex-row items-center mb-3">
+                    <Image
+                      source={{ uri: imagePath }}
+                      className="w-24 h-24 rounded-md mr-3"
+                    />
+                    <Pressable
+                      onPress={() => {
+                        if (imagePath.includes("https://firebasestorage")) {
+                          setDeletedImageUrls((urls) => [...urls, imagePath]);
+                        }
+                        setNote((note) => ({
+                          ...note,
+                          imageUrls: note.imageUrls.filter(
+                            (path) => path !== imagePath
+                          ),
+                        }));
+                      }}
+                      className="bg-red-500 py-2 px-3 rounded-lg">
+                      <Text className="text-white">Remove</Text>
+                    </Pressable>
+                  </View>
+                ))}
               </View>
-            ))}
+            )}
+            <View className="flex-row justify-between">
+              {/* Voice Note Recording Button */}
+              <Pressable
+                onPress={recording ? handleStopRecording : handleStartRecording}
+                className="bg-orange-500 py-2 px-4 rounded-lg flex-1 mr-2">
+                <Text className="text-white text-center font-semibold">
+                  {recording ? "Stop Recording" : "Record Voice Note"}
+                </Text>
+              </Pressable>
+
+              {/* Play Voice Note Button */}
+              {note.voiceNoteUrl && (
+                <Pressable
+                  onPress={handlePlayAudio}
+                  disabled={isPlaying}
+                  className={`bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2 ${
+                    isPlaying ? "opacity-75" : ""
+                  }`}>
+                  <Text className="text-white text-center font-semibold">
+                    {isPlaying ? "Playing..." : "Play Voice Note"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+            <View className="flex-row justify-between mt-4">
+              <Pressable
+                className="bg-gray-500 py-2 px-4 rounded-lg flex-1 mr-2"
+                onPress={() => {
+                  setMarker(null);
+                  setShowModal(false);
+                }}>
+                <Text className="text-white text-center font-semibold">
+                  Close
+                </Text>
+              </Pressable>
+              {isTainted &&
+                (isSaving ? (
+                  <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">
+                    <Text className="text-white text-center font-semibold">
+                      Saving...
+                    </Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2"
+                    onPress={() =>
+                      note.id !== "" ? handleUpdateNote() : handleAddNote()
+                    }>
+                    <Text className="text-white text-center font-semibold">
+                      {note.id !== "" ? "Update" : "Save"}
+                    </Text>
+                  </Pressable>
+                ))}
+            </View>
           </View>
         )}
-        <View className="flex-row justify-between">
-          {/* Voice Note Recording Button */}
-          <Pressable
-            onPress={recording ? handleStopRecording : handleStartRecording}
-            className="bg-orange-500 py-2 px-4 rounded-lg flex-1 mr-2">
-            <Text className="text-white text-center font-semibold">
-              {recording ? "Stop Recording" : "Record Voice Note"}
-            </Text>
-          </Pressable>
-
-          {/* Play Voice Note Button */}
-          {note.voiceNoteUrl && (
-            <Pressable
-              onPress={handlePlayAudio}
-              disabled={isPlaying}
-              className={`bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2 ${
-                isPlaying ? "opacity-75" : ""
-              }`}>
-              <Text className="text-white text-center font-semibold">
-                {isPlaying ? "Playing..." : "Play Voice Note"}
-              </Text>
-            </Pressable>
-          )}
-        </View>
-        <View className="flex-row justify-between mt-4">
-          <Pressable
-            className="bg-gray-500 py-2 px-4 rounded-lg flex-1 mr-2"
-            onPress={() => {
-              setMarker(null);
-              setShowModal(false);
-            }}>
-            <Text className="text-white text-center font-semibold">Close</Text>
-          </Pressable>
-          {isSaving ? (
-            <View className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2">
-              <Text className="text-white text-center font-semibold">
-                Saving...
-              </Text>
-            </View>
-          ) : (
-            <Pressable
-              className="bg-green-500 py-2 px-4 rounded-lg flex-1 ml-2"
-              onPress={() =>
-                note.id !== "" ? handleUpdateNote() : handleAddNote()
-              }>
-              <Text className="text-white text-center font-semibold">
-                {note.id !== "" ? "Update" : "Save"}
-              </Text>
-            </Pressable>
-          )}
-        </View>
       </View>
     </Modal>
   );
