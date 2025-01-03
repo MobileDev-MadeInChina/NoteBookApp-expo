@@ -13,6 +13,12 @@ import { Note } from "@/types";
 import { launchImagePicker } from "@/services/imagePicker";
 import { selectNoteById, updateNote } from "@/services/notesService";
 import { useAuth } from "../AuthContext";
+import { Audio } from "expo-av";
+import {
+  handleVoiceNoteRecording,
+  playAudio,
+  startRecording,
+} from "@/services/audioService";
 
 export default function NoteScreen() {
   const { user } = useAuth();
@@ -23,12 +29,16 @@ export default function NoteScreen() {
     text: "",
     imageUrls: [],
     mark: null,
-    voiceNoteUrl: undefined,
+    voiceNoteUrl: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // state for deleted image urls
   const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
+  const [recording, setRecording] = useState(false); // Recording state for voice notes
+  // State for the sound object
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // launch image picker
   async function handleImagePicker() {
@@ -81,7 +91,44 @@ export default function NoteScreen() {
     }
     setIsSaving(false);
   }
+  // Handle start of audio recording
+  const handleStartRecording = async () => {
+    await startRecording();
+    setRecording(true);
+  };
 
+  // Handle stop of audio recording and save the URI
+  const handleStopRecording = async () => {
+    try {
+      await handleVoiceNoteRecording(note, setNote, setRecording);
+    } catch (error) {
+      console.error("Error handling recording:", error);
+      Alert.alert("Error", "Failed to save recording");
+    }
+  };
+
+  // Play the recorded audio note
+  const handlePlayAudio = async () => {
+    if (note.voiceNoteUrl) {
+      try {
+        await playAudio(note.voiceNoteUrl, setSound, setIsPlaying);
+      } catch (error) {
+        console.error("Error playing audio:", error);
+      }
+    } else {
+      Alert.alert("Error", "No voice note recorded");
+      setRecording(false);
+    }
+  };
+
+  // Cleanup sound when component unmounts
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
   return (
     <View className="flex-1 bg-gray-100 justify-center">
       <Pressable
@@ -137,6 +184,30 @@ export default function NoteScreen() {
 
         <View className="mt-6 space-y-4 border">
           <Button title="Select Image" onPress={handleImagePicker} />
+        </View>
+        <View className="flex-row justify-between">
+          {/* Voice Note Recording Button */}
+          <Pressable
+            onPress={recording ? handleStopRecording : handleStartRecording}
+            className="bg-orange-500 py-2 px-4 rounded-lg flex-1 mr-2">
+            <Text className="text-white text-center font-semibold">
+              {recording ? "Stop Recording" : "Record Voice Note"}
+            </Text>
+          </Pressable>
+
+          {/* Play Voice Note Button */}
+          {note.voiceNoteUrl && (
+            <Pressable
+              onPress={handlePlayAudio}
+              disabled={isPlaying}
+              className={`bg-purple-500 py-2 px-4 rounded-lg flex-1 ml-2 ${
+                isPlaying ? "opacity-75" : ""
+              }`}>
+              <Text className="text-white text-center font-semibold">
+                {isPlaying ? "Playing..." : "Play Voice Note"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         <Button title="Save" onPress={handleUpdateNote} />
