@@ -39,6 +39,37 @@ export const stopRecording = async (): Promise<string | null> => {
   }
 };
 
+export const handleVoiceNoteRecording = async (
+  note: { voiceNoteUrl: string },
+  setNote: (note: any) => void,
+  setRecording: (recording: boolean) => void,
+  deleteVoiceNote: (url: string) => Promise<void>,
+  uploadVoiceNote: (uri: string) => Promise<string>
+) => {
+  try {
+    const uri = await stopRecording();
+    if (uri) {
+      console.log("New recording URI:", uri);
+      // Upload the new recording to Firebase Storage
+      const uploadedUrl = await uploadVoiceNote(uri);
+      console.log("Uploaded URL:", uploadedUrl);
+
+      // Only delete the old recording if it exists and is different
+      if (note.voiceNoteUrl && note.voiceNoteUrl !== uploadedUrl) {
+        await deleteVoiceNote(note.voiceNoteUrl);
+      }
+
+      // Update the note with the new URL
+      setNote((prev: any) => ({ ...prev, voiceNoteUrl: uploadedUrl }));
+    }
+  } catch (error) {
+    console.error("Error handling recording:", error);
+    throw error;
+  } finally {
+    setRecording(false);
+  }
+};
+
 export const playAudio = async (
   voiceNoteUrl: string,
   setSound: (sound: Audio.Sound | null) => void,

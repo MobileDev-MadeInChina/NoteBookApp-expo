@@ -17,9 +17,9 @@ import {
 import { launchImagePicker } from "@/services/imagePicker";
 import { useAuth } from "@/app/AuthContext";
 import {
+  handleVoiceNoteRecording,
   playAudio,
   startRecording,
-  stopRecording,
 } from "@/services/audioService";
 import { Audio } from "expo-av";
 import { deleteVoiceNote, uploadVoiceNote } from "@/services/storageService";
@@ -155,27 +155,17 @@ export function MarkerModal({
   // Handle stop of audio recording and save the URI
   const handleStopRecording = async () => {
     try {
-      const uri = await stopRecording();
-      if (uri) {
-        console.log("New recording URI:", uri);
-        // Upload the new recording to Firebase Storage
-        // We uses CRUD already here to be able to delete the old recording if needed
-        const uploadedUrl = await uploadVoiceNote(uri);
-        console.log("Uploaded URL:", uploadedUrl);
-
-        // Only delete the old recording if it exists and is different
-        if (note.voiceNoteUrl && note.voiceNoteUrl !== uploadedUrl) {
-          await deleteVoiceNote(note.voiceNoteUrl);
-        }
-
-        // Update the note with the new URL
-        setNote((prev) => ({ ...prev, voiceNoteUrl: uploadedUrl }));
-      }
+      await handleVoiceNoteRecording(
+        note,
+        setNote,
+        setRecording,
+        deleteVoiceNote,
+        uploadVoiceNote
+      );
     } catch (error) {
       console.error("Error handling recording:", error);
       Alert.alert("Error", "Failed to save recording");
     }
-    setRecording(false);
   };
 
   // Play the recorded audio note
