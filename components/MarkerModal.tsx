@@ -96,7 +96,7 @@ export function MarkerModal({
     }
 
     fetchNote();
-  }, [marker.key, user]);
+  }, [marker, user]);
 
   // Handle image picker functionality
   async function handleImagePicker() {
