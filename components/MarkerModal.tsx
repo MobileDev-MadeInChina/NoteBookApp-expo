@@ -46,8 +46,6 @@ export function MarkerModal({
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isTainted, setIsTainted] = useState(false);
-  // Using a ref to store the original note
-  const originalNote = useRef<Note | null>(null);
 
   // Initialize note state with default values
   const [note, setNote] = useState<Note>({
@@ -57,6 +55,9 @@ export function MarkerModal({
     mark: marker,
     voiceNoteUrl: "",
   });
+
+  // Using a ref to store the original note
+  const originalNote = useRef<Note>(note); // Initialize with the default note
 
   // Set isTainted state to true if the any note field is changed
   useEffect(() => {
@@ -85,8 +86,8 @@ export function MarkerModal({
         if (fetchedNote) {
           setNote(fetchedNote); // Set note data if available
           originalNote.current = fetchedNote; // Store original note
-          setIsTainted(false);
         }
+        setIsTainted(false);
       } catch (error) {
         console.log("Error loading note:", error);
         Alert.alert("Error", "Failed to load note", [{ text: "Okay" }]);
