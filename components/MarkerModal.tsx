@@ -80,7 +80,6 @@ export function MarkerModal({
       try {
         // Check if user and marker are available otherwise return
         if (!user || !marker) {
-          console.log("No user found");
           return;
         }
         const fetchedNote = await selectNoteByMarkerKey(marker.key, user.uid);
