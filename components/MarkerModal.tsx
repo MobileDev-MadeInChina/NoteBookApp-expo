@@ -78,7 +78,7 @@ export function MarkerModal({
 
     async function fetchNote() {
       try {
-        // Check if user and marker are available otherwise return
+        // Check if user or marker are available otherwise return
         if (!user || !marker) {
           return;
         }
