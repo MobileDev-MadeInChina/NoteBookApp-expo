@@ -95,59 +95,69 @@ export default function HomeScreen() {
           )}
           <View className="flex-row flex-wrap mt-5 justify-center"></View>
           {data &&
-            data.map((note, index) => (
-              <View
-                key={index}
-                className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden">
-                <Link
-                  href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
-                  <View className="p-4">
-                    <Text className="text-lg text-gray-800 mb-2">
-                      {note.text.length > 50
-                        ? `${note.text.slice(0, 50)}...`
-                        : note.text}
-                    </Text>
+            data
+              .sort(
+                (a, b) =>
+                  new Date(b.mark.key).getTime() -
+                  new Date(a.mark.key).getTime()
+              )
+              .reverse()
+              .map((note, index) => (
+                <View
+                  key={index}
+                  className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden">
+                  <Link
+                    href={{ pathname: "/notes/[id]", params: { id: note.id } }}>
+                    <View className="p-4">
+                      <Text className="text-lg text-gray-800 mb-2">
+                        {note.text.length > 50
+                          ? `${note.text.slice(0, 50)}...`
+                          : note.text}
+                      </Text>
 
-                    {note.imageUrls.length > 0 && (
-                      <View className="flex-row flex-wrap">
-                        {note.imageUrls.map((imageUrl, imgIndex) => (
-                          <Image
-                            key={imgIndex}
-                            source={{ uri: imageUrl }}
-                            className="w-16 h-16 rounded-xl mr-2 mb-2"
-                          />
-                        ))}
-                      </View>
+                      {note.imageUrls.length > 0 && (
+                        <View className="flex-row flex-wrap">
+                          {note.imageUrls.map((imageUrl, imgIndex) => (
+                            <Image
+                              key={imgIndex}
+                              source={{ uri: imageUrl }}
+                              className="w-16 h-16 rounded-xl mr-2 mb-2"
+                            />
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  </Link>
+
+                  <View className="bg-gray-50 px-4 py-3 flex-row justify-between items-center">
+                    <Link
+                      className="bg-blue-500 rounded-full px-4 py-2 shadow-md"
+                      href={{
+                        pathname: "/map",
+                        params: {
+                          latitude: note.mark?.coordinate.latitude,
+                          longitude: note.mark?.coordinate.longitude,
+                        },
+                      }}>
+                      <Text className="text-white font-semibold">
+                        View in Map
+                      </Text>
+                    </Link>
+                    {deletingNote ? (
+                      <Text className="text-gray-600">Deleting...</Text>
+                    ) : (
+                      <Pressable
+                        onPress={() => handleDeleteNote(note)}
+                        className="bg-red-500 px-4 py-2 rounded-full">
+                        <Text className="text-white font-semibold">Delete</Text>
+                      </Pressable>
                     )}
                   </View>
-                </Link>
-
-                <View className="bg-gray-50 px-4 py-3 flex-row justify-between items-center">
-                  <Link
-                    className="bg-blue-500 rounded-full px-4 py-2 shadow-md"
-                    href={{
-                      pathname: "/map",
-                      params: {
-                        latitude: note.mark?.coordinate.latitude,
-                        longitude: note.mark?.coordinate.longitude,
-                      },
-                    }}>
-                    <Text className="text-white font-semibold">
-                      View in Map
-                    </Text>
-                  </Link>
-                  {deletingNote ? (
-                    <Text className="text-gray-600">Deleting...</Text>
-                  ) : (
-                    <Pressable
-                      onPress={() => handleDeleteNote(note)}
-                      className="bg-red-500 px-4 py-2 rounded-full">
-                      <Text className="text-white font-semibold">Delete</Text>
-                    </Pressable>
-                  )}
+                  <Text className="text-gray-500 text-sm">
+                    Added {new Date(note.mark.key).toLocaleDateString()}
+                  </Text>
                 </View>
-              </View>
-            ))}
+              ))}
         </ScrollView>
         {/* Logout button */}
         <View className="absolute bottom-4 left-0 right-0 items-center">

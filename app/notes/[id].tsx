@@ -20,7 +20,7 @@ export default function NoteScreen() {
     id: params.id as string,
     text: "",
     imageUrls: [],
-    mark: null,
+    mark: { coordinate: { latitude: 0, longitude: 0 }, key: "", title: "" },
     voiceNoteUrl: "",
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +33,7 @@ export default function NoteScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isTainted, setIsTainted] = useState(false);
   // Using a ref to store the original note
-  const originalNote = useRef<Note | null>(null);
+  const originalNote = useRef<Note>(note);
 
   // Set isTainted state to true if the any note field is changed
   useEffect(() => {

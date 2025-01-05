@@ -118,7 +118,7 @@ export default function MapScreen() {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     const newMarker: NoteMarker = {
       coordinate: { latitude, longitude },
-      key: `${Date.now()}`,
+      key: new Date().toISOString(),
       title: "",
     };
     setSelectedMarker(newMarker);

@@ -5,7 +5,7 @@ export type Note = {
   id: string;
   text: string;
   imageUrls: string[];
-  mark: NoteMarker | null;
+  mark: NoteMarker;
   voiceNoteUrl: string;
 };
 
