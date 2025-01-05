@@ -101,7 +101,6 @@ export default function HomeScreen() {
                   new Date(b.mark.key).getTime() -
                   new Date(a.mark.key).getTime()
               )
-              .reverse()
               .map((note, index) => (
                 <View
                   key={index}
