@@ -13,5 +13,4 @@ export type NoteMarker = {
   coordinate: LatLng;
   key: string;
   title: string;
-  voiceNoteUrl: string;
 };

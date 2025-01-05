@@ -108,7 +108,6 @@ export default function MapScreen() {
           },
           key: doc.id,
           title: doc.data().text,
-          voiceNoteUrl: doc.data().voiceNoteUrl || null,
         }))
       );
     }
