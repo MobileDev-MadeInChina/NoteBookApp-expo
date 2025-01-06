@@ -153,7 +153,7 @@ export default function HomeScreen() {
                     )}
                   </View>
                   <Text className="text-gray-500 text-sm">
-                    Added {new Date(note.mark.key).toLocaleDateString()}
+                    Added {new Date(note.mark.key).toLocaleDateString()} at {new Date(note.mark.key).toLocaleTimeString()}
                   </Text>
                 </View>
               ))}
